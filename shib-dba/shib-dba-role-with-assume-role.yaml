@@ -37,6 +37,7 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
+                  - "ec2:CreateSecurityGroup"
                   - "ec2:DescribeSecurityGroup"
                   - "ec2:DescribeVpcs"
                 Resource: "*"
