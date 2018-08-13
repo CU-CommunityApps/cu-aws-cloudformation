@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates a role for reseachers to use EC2 (full access) and EMR. Also derived from arn:aws:iam::aws:policy/job-function/DataScientist.
+Parameters:
+  BucketPrefixParameter:
+    Type: String
+    Default: cu-ec2emr
+    Description: Bucket name prefix to scope S3 operations. E.g. "xyz" will restrict bucket access/operations to any buckets beginning with "zyx".
+Resources:
+  EC2EMRRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: shib-ec2emr
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+                Federated: !Sub "arn:aws:iam::${AWS::AccountId}:saml-provider/cornell_idp"
+            Action: "sts:AssumeRoleWithSAML"
+            Condition:
+              StringEquals:
+                SAML:aud: "https://signin.aws.amazon.com/saml"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - !Ref ScopeRegionsUSEastPolicy
+        - !Ref LimitedEMRPolicy
+
+  ScopeRegionsUSEastPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: scope-regions-us-east
+      Description: Deny operations except in us-east-1, us-east-2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Condition:
+              StringNotEquals:
+                aws:RequestedRegion:
+                  - us-east-1
+                  - us-east-2
+            Action:
+              - elasticmapreduce:*
+              - ec2:*
+              - elasticloadbalancing:*
+              - cloudwatch:*
+              - autoscaling:*
+              - sns:*
+              - logs:*
+              - cloudformation:*
+              - kms:*
+              - s3:*
+            Resource: "*"
+            Effect: Deny
+
+  LimitedEMRPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: limited-emr-access
+      Description: A subset of EMR permissions based on AmazonElasticMapReduceFullAccess
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Action:
+              - cloudformation:CreateStack
+              - cloudformation:DescribeStackEvents
+              - elasticmapreduce:*
+              - iam:GetInstanceProfile
+              - iam:GetRole
+              - iam:GetPolicy
+              - iam:GetPolicyVersion
+              - iam:ListUsers
+              - iam:ListPolicies
+              - iam:ListRoles
+              - iam:ListInstanceProfiles
+              - kms:List*
+              - s3:ListAllMyBuckets
+              - sns:CreateTopic
+              - sns:Get*
+              - sns:List*
+              - logs:DescribeLogStreams
+              - logs:GetLogEvents
+            Effect: Allow
+            Resource: "*"
+          -
+            Effect: Allow
+            Action:
+              - s3:CreateBucket
+              - s3:Abort*
+              - s3:DeleteObject
+              - s3:Get*
+              - s3:List*
+              - s3:PutAccelerateConfiguration
+              - s3:PutBucketLogging
+              - s3:PutBucketNotification
+              - s3:PutBucketTagging
+              - s3:PutObject
+              - s3:Replicate*
+              - s3:RestoreObject
+            Resource:
+              BucketPrefixParameter
+              - !Sub "arn:aws:s3:::${BucketPrefixParameter}*"
+          -
+            Effect: Allow
+            Action:
+              - iam:GetRole
+              - iam:PassRole
+            Resource:
+              - arn:aws:iam::*:role/DataPipelineDefaultRole
+              - arn:aws:iam::*:role/DataPipelineDefaultResourceRole
+              - arn:aws:iam::*:role/EMR_EC2_DefaultRole
+              - arn:aws:iam::*:role/EMR_DefaultRole
+              - arn:aws:iam::*:role/kinesis-*
+              - arn:aws:iam::*:role/aws-ec2-spot-fleet-role
+              - arn:aws:iam::*:role/aws-ec2-spot-fleet-tagging-role
+          -
+            Effect: Allow
+            Action: iam:CreateServiceLinkedRole
+            Resource: "*"
+            Condition:
+              StringLike:
+                iam:AWSServiceName:
+                  - elasticmapreduce.amazonaws.com
