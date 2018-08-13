@@ -101,7 +101,6 @@ Resources:
               - s3:Replicate*
               - s3:RestoreObject
             Resource:
-              BucketPrefixParameter
               - !Sub "arn:aws:s3:::${BucketPrefixParameter}*"
           -
             Effect: Allow
