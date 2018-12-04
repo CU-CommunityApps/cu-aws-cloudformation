@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Creates a role for reseachers to use EC2 (full access) and EMR. Also derived from arn:aws:iam::aws:policy/job-function/DataScientist.
+  Creates a role for reseachers to use EC2 (full access) and EMR. Also derived from arn:aws:iam::aws:policy/job-function/DataScientist. Also creates an IAM group with similar privileges.
 Parameters:
   BucketPrefixParameter:
     Type: String
@@ -26,6 +26,19 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2FullAccess
         - !Ref ScopeRegionsUSEastPolicy
         - !Ref LimitedEMRPolicy
+
+  EC2EMRGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: ec2emr-users
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - !Ref ScopeRegionsUSEastPolicy
+        - !Ref LimitedEMRPolicy
+        - !Ref ForceMFAPolicy
+      # Path: String
+      # Policies:
+      #   - Policies
 
   ScopeRegionsUSEastPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -123,3 +136,85 @@ Resources:
               StringLike:
                 iam:AWSServiceName:
                   - elasticmapreduce.amazonaws.com
+  ForceMFAPolicy:
+        Type: AWS::IAM::ManagedPolicy
+        Properties:
+          ManagedPolicyName: self-manage-iam-force-mfa
+          Description: Allow IAM users to manage their own credentials; require MFA; based on https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_users-self-manage-mfa-and-creds.html
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Sid: AllowAllUsersToListAccounts
+              Effect: Allow
+              Action:
+              - iam:ListAccountAliases
+              - iam:ListUsers
+              - iam:ListVirtualMFADevices
+              - iam:GetAccountPasswordPolicy
+              - iam:GetAccountSummary
+              Resource: "*"
+            - Sid: AllowIndividualUserToSeeAndManageOnlyTheirOwnAccountInformation
+              Effect: Allow
+              Action:
+              - iam:ChangePassword
+              - iam:CreateAccessKey
+              - iam:CreateLoginProfile
+              - iam:DeleteAccessKey
+              - iam:DeleteLoginProfile
+              - iam:GetLoginProfile
+              - iam:ListAccessKeys
+              - iam:UpdateAccessKey
+              - iam:UpdateLoginProfile
+              - iam:ListSigningCertificates
+              - iam:DeleteSigningCertificate
+              - iam:UpdateSigningCertificate
+              - iam:UploadSigningCertificate
+              - iam:ListSSHPublicKeys
+              - iam:GetSSHPublicKey
+              - iam:DeleteSSHPublicKey
+              - iam:UpdateSSHPublicKey
+              - iam:UploadSSHPublicKey
+              Resource: arn:aws:iam::*:user/${aws:username}
+            - Sid: AllowIndividualUserToViewAndManageTheirOwnMFA
+              Effect: Allow
+              Action:
+              - iam:CreateVirtualMFADevice
+              - iam:DeleteVirtualMFADevice
+              - iam:EnableMFADevice
+              - iam:ListMFADevices
+              - iam:ResyncMFADevice
+              Resource:
+              - arn:aws:iam::*:mfa/${aws:username}
+              - arn:aws:iam::*:user/${aws:username}
+            - Sid: AllowIndividualUserToDeactivateOnlyTheirOwnMFAOnlyWhenUsingMFA
+              Effect: Allow
+              Action:
+              - iam:DeactivateMFADevice
+              Resource:
+              - arn:aws:iam::*:mfa/${aws:username}
+              - arn:aws:iam::*:user/${aws:username}
+              Condition:
+                Bool:
+                  aws:MultiFactorAuthPresent: 'true'
+            - Sid: BlockMostAccessUnlessSignedInWithMFA
+              Effect: Deny
+              NotAction:
+              - iam:CreateVirtualMFADevice
+              - iam:DeleteVirtualMFADevice
+              - iam:ListVirtualMFADevices
+              - iam:EnableMFADevice
+              - iam:ResyncMFADevice
+              - iam:ListAccountAliases
+              - iam:ListUsers
+              - iam:ListSSHPublicKeys
+              - iam:ListAccessKeys
+              - iam:ListServiceSpecificCredentials
+              - iam:ListMFADevices
+              - iam:GetAccountSummary
+              - sts:GetSessionToken
+              - iam:ChangePassword
+              - iam:CreateLoginProfile
+              Resource: "*"
+              Condition:
+                BoolIfExists:
+                  aws:MultiFactorAuthPresent: 'false'
