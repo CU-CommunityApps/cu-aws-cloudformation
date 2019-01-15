@@ -28,6 +28,9 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonRDSFullAccess
         - arn:aws:iam::aws:policy/ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonDMSCloudWatchLogsRole
+        # May need this role for managing DMS VPC resources
+        # - arn:aws:iam::aws:policy/service-role/AmazonDMSVPCManagementRole
       Policies:
         -
           PolicyName: "SecurityGroupFullControl"
@@ -75,4 +78,15 @@ Resources:
                   - "cloudwatch:PutMetricAlarm"
                   - "cloudwatch:SetAlarmState"
                   - "cloudwatch:DeleteAlarms"
+                Resource: "*"
+        -
+          # https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Security.IAMPermissions.html
+          PolicyName: "DMSFullControl"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "dms:*"
                 Resource: "*"
