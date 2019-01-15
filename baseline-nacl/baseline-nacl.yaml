@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: A VPC environment in two availability zones with two NAT Gateways
+Description: "Create a standard baseline Network ACL. Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/tree/master/baseline-nacl"
 
 Parameters:
   TargetVPCParam:
