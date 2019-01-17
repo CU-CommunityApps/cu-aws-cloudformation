@@ -29,6 +29,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonRDSFullAccess
         - arn:aws:iam::aws:policy/ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AmazonDMSCloudWatchLogsRole
+        - arn:aws:iam::aws:policy/AWSSupportAccess
         # May need this role for managing DMS VPC resources
         # - arn:aws:iam::aws:policy/service-role/AmazonDMSVPCManagementRole
       Policies:
