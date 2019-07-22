@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Create IAM group and policy to be used for sending email via SES. Required only once per AWS account.
+Parameters:
+  SesGroupName:
+    Default: ses-email-senders
+    Description: Name for the IAM group to allow sending email via SES
+    Type: String
+  SesPolicyName:
+    Default: ses-send-email
+    Description: Name for the IAM managed policy to allow sending email via SES
+    Type: String
+Resources:
+  SesPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: Allows sending email via SES.
+      ManagedPolicyName: ses-send-email
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - ses:SendBounce
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Resource: '*'
+
+  SesGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: !Ref SesGroupName
+      ManagedPolicyArns:
+        - !Ref SesPolicy
+
+Outputs:
+  SesGroupOut:
+    Description: ARN of the IAM group that allows IAM users in it to send email via SES
+    Value: !Ref SesGroupName
+    Export:
+      Name: !Sub "${AWS::StackName}-SesGroupName"
