@@ -91,6 +91,9 @@ Resources:
     Type: AWS::EC2::VPNGateway
     Properties:
       Type: ipsec.1
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref MonikerParam, 'vgw' ] ]
 
   vpgAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
