@@ -1,0 +1,778 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cornell standard VPC - DO NOT DELETE - Contact cloud-support@cornell.edu
+
+Parameters:
+  MonikerParam:
+    Description: Account alias or moniker
+    Default: cu-moniker
+    Type: String
+  VPCCIDR:
+    Description: CIDR block for the VPC
+    Default: "10.0.0.0/23"
+    Type: String
+  PrivateSubnet1CIDR:
+    Description: CIDR block for the first private subnet
+    Default: "10.0.0.0/26"
+    Type: String
+  PublicSubnet1CIDR:
+    Description: CIDR block for the first public subnet
+    Default: "10.0.0.64/26"
+    Type: String
+  PrivateSubnet2CIDR:
+    Description: CIDR block for the second private subnet
+    Default: "10.0.0.128/26"
+    Type: String
+  PublicSubnet2CIDR:
+    Description: CIDR block for the second public subnet
+    Default: "10.0.0.192/26"
+    Type: String
+  AZ1Param:
+    Description: Availability zone for subnet set 1
+    Default: us-east-1a
+    Type: String
+  AZ2Param:
+    Description: Availability zone for subnet set 2
+    Default: us-east-1b
+    Type: String
+  PrivateRoutePropagationParam:
+    Description: Propagate routes from DirectConnect to private route tables(s)
+    Default: "False"
+    Type: String
+    AllowedValues:
+      - "True"
+      - "False"
+
+Conditions:
+  PrivateRoutePropagation: !Equals [ !Ref PrivateRoutePropagationParam, "True" ]
+
+Resources:
+
+  eipNatGateway:
+    Properties:
+      Domain: vpc
+    Type: AWS::EC2::EIP
+
+  igwAttachment:
+    DependsOn:
+    - vpc
+    - igw
+    Properties:
+      InternetGatewayId:
+        Ref: igw
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::VPCGatewayAttachment
+
+  igw:
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'igw' ] ]
+    Type: AWS::EC2::InternetGateway
+
+  natGateway:
+    DependsOn:
+    - subnetPublic1
+    - eipNatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - eipNatGateway
+        - AllocationId
+      SubnetId:
+        Ref: subnetPublic1
+      Tags:
+        - Key: Name
+          Value: natgateway-public-1
+    Type: AWS::EC2::NatGateway
+
+  vpg:
+    Type: AWS::EC2::VPNGateway
+    Properties:
+      Type: ipsec.1
+
+  vpgAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref vpc
+      VpnGatewayId: !Ref vpg
+
+  vpgRoutePropagation:
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Condition: PrivateRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref rtbPrivate
+      VpnGatewayId: !Ref vpg
+
+  route10SpacePrivate:
+    DependsOn:
+    - vpgAttachment
+    - rtbPrivate
+    Properties:
+      DestinationCidrBlock: 10.0.0.0/8
+      GatewayId: !Ref vpg
+      RouteTableId:
+        Ref: rtbPrivate
+    Type: AWS::EC2::Route
+
+  route10SpacePublic:
+    DependsOn:
+    - vpgAttachment
+    - rtbPublic
+    Properties:
+      DestinationCidrBlock: 10.0.0.0/8
+      GatewayId: !Ref vpg
+      RouteTableId:
+        Ref: rtbPublic
+    Type: AWS::EC2::Route
+
+  routePrivate1:
+    DependsOn:
+    - natGateway
+    - rtbPrivate
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: natGateway
+      RouteTableId:
+        Ref: rtbPrivate
+    Type: AWS::EC2::Route
+
+  routePublic:
+    DependsOn:
+    - igwAttachment
+    - rtbPublic
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: igw
+      RouteTableId:
+        Ref: rtbPublic
+    Type: AWS::EC2::Route
+
+  rtbAssociationPrivate1:
+    DependsOn:
+    - subnetPrivate1
+    - rtbPrivate
+    Properties:
+      RouteTableId:
+        Ref: rtbPrivate
+      SubnetId:
+        Ref: subnetPrivate1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  rtbAssociationPrivate2:
+    DependsOn:
+    - subnetPrivate2
+    - rtbPrivate
+    Properties:
+      RouteTableId:
+        Ref: rtbPrivate
+      SubnetId:
+        Ref: subnetPrivate2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  rtbAssociationPublic1:
+    DependsOn:
+    - subnetPublic1
+    - rtbPublic
+    Properties:
+      RouteTableId:
+        Ref: rtbPublic
+      SubnetId:
+        Ref: subnetPublic1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  rtbAssociationPublic2:
+    DependsOn:
+    - subnetPublic2
+    - rtbPublic
+    Properties:
+      RouteTableId:
+        Ref: rtbPublic
+      SubnetId:
+        Ref: subnetPublic2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+  rtbPrivate:
+    DependsOn:
+    - vpc
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'private-rt1' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::RouteTable
+
+  rtbPublic:
+    DependsOn:
+    - vpc
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'public-rt' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::RouteTable
+
+  subnetPrivate1:
+    DependsOn:
+    - vpc
+    Properties:
+      AvailabilityZone: !Ref AZ1Param
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'subnet-private-1' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+
+  subnetPrivate2:
+    DependsOn:
+    - vpc
+    Properties:
+      AvailabilityZone: !Ref AZ2Param
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'subnet-private-2' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+
+  subnetPublic1:
+    DependsOn:
+    - vpc
+    Properties:
+      AvailabilityZone: !Ref AZ1Param
+      CidrBlock: !Ref PublicSubnet1CIDR
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'subnet-public-1' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+
+  subnetPublic2:
+    DependsOn:
+    - vpc
+    Properties:
+      AvailabilityZone: !Ref AZ2Param
+      CidrBlock: !Ref PublicSubnet2CIDR
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'subnet-public-2' ] ]
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+
+  vpc:
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [ !Ref MonikerParam, 'vpc' ] ]
+    Type: AWS::EC2::VPC
+
+  VPCFlowLog:
+    Type: AWS::EC2::FlowLog
+    DependsOn:
+      - FlowLogGroup
+      - FlowLogsRole
+    Properties:
+      DeliverLogsPermissionArn : !GetAtt FlowLogsRole.Arn
+      # The ARN returned here by the FlowLogGroup seems to be broken.
+      # LogDestination: !GetAtt FlowLogGroup.Arn
+      # Construct ARN from scratch instead:
+      LogDestination: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:vpc-flow-logs"
+      LogDestinationType: cloud-watch-logs
+      ResourceId : !Ref vpc
+      ResourceType : VPC
+      TrafficType : ALL
+
+  FlowLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: vpc-flow-logs
+      RetentionInDays: 180
+
+  FlowLogsRole:
+    # https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-cwl.html
+    Type: AWS::IAM::Role
+    Properties:
+      # RoleName: String
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      # ManagedPolicyArns:
+      #   - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      # MaxSessionDuration: Integer
+      # Path: String
+      # PermissionsBoundary: String
+      Policies:
+        - PolicyName: log-to-cloudwatch
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: '*'
+
+  VPCNetworkACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      Tags:
+        - Key: Name
+          Value: cornell-baseline-nacl
+      VpcId: !Ref vpc
+
+  subnetPublic1NACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref subnetPublic1
+      NetworkAclId: !Ref VPCNetworkACL
+
+  subnetPublic2NACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref subnetPublic2
+      NetworkAclId: !Ref VPCNetworkACL
+
+  subnetPrivate1NACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref subnetPrivate1
+      NetworkAclId: !Ref VPCNetworkACL
+
+  subnetPrivate2NACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref subnetPrivate2
+      NetworkAclId: !Ref VPCNetworkACL
+
+  NetworkACLRuleIn0100:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 22
+        To: 22
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 100
+
+  NetworkACLRuleIn0200:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 80
+        To: 80
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 200
+
+  NetworkACLRuleIn0300:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 443
+        To: 443
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 300
+
+  NetworkACLRuleIn0400:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 1024
+        To: 65535
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 400
+
+  NetworkACLRuleIn0500:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 1024
+        To: 65535
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 500
+
+  NetworkACLRuleIn0600:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 123
+        To: 123
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 600
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws.login.cornell.edu
+  NetworkACLRuleIn0610:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 52.200.35.38/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 610
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws.login.cornell.edu
+  NetworkACLRuleIn0611:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 52.200.35.38/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 611
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws2.login.cornell.edu
+  NetworkACLRuleIn0620:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 52.201.66.104/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 620
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws2.login.cornell.edu
+  NetworkACLRuleIn0621:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 52.201.66.104/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 621
+
+  NetworkACLRuleIn0700:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 10.0.0.0/8
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 700
+
+  NetworkACLRuleIn0800:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 128.84.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 800
+
+  NetworkACLRuleIn0900:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 128.253.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 900
+
+  NetworkACLRuleIn1000:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 132.236.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1000
+
+  NetworkACLRuleIn1100:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 192.35.82.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1100
+
+  NetworkACLRuleIn1100:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 192.35.82.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1100
+
+
+  NetworkACLRuleIn1200:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 192.122.235.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1200
+
+  NetworkACLRuleIn1300:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 192.122.236.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1300
+
+  NetworkACLRuleOut0100:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 22
+        To: 22
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 100
+
+  NetworkACLRuleOut0200:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 80
+        To: 80
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 200
+
+  NetworkACLRuleOut0300:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 443
+        To: 443
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 300
+
+  NetworkACLRuleOut0400:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 1024
+        To: 65535
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 400
+
+  NetworkACLRuleOut0500:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 1024
+        To: 65535
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 500
+
+  NetworkACLRuleOut0600:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 123
+        To: 123
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 600
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws.login.cornell.edu
+  NetworkACLRuleOut0610:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 52.200.35.38/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 610
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws.login.cornell.edu
+  NetworkACLRuleOut0611:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 52.200.35.38/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 611
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws2.login.cornell.edu
+  NetworkACLRuleOut0620:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 52.201.66.104/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 6
+      RuleAction : allow
+      RuleNumber : 620
+
+  # Elastic IP of AWS-based Cornell Kerberos Server
+  # kerberos-aws2.login.cornell.edu
+  NetworkACLRuleOut0621:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 52.201.66.104/32
+      NetworkAclId: !Ref VPCNetworkACL
+      PortRange:
+        From: 88
+        To: 88
+      Protocol: 17
+      RuleAction : allow
+      RuleNumber : 621
+
+  NetworkACLRuleOut0700:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 10.0.0.0/8
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 700
+
+  NetworkACLRuleOut0800:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 128.84.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 800
+
+  NetworkACLRuleOut0900:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 128.253.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 900
+
+  NetworkACLRuleOut1000:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 132.236.0.0/16
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1000
+
+  NetworkACLRuleOut1100:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 192.35.82.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1100
+
+  NetworkACLRuleOut1200:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 192.122.235.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1200
+
+  NetworkACLRuleOut1300:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 192.122.236.0/24
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1300
