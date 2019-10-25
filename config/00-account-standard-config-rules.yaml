@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Account-level Config Service rules (https://github.com/CU-CommunityApps/cu-aws-cloudformation/config/00-account-standard-config-rules.yaml)
+Parameters: {}
+Metadata: {}
+Conditions: {}
+Mappings: {}
+Resources:
+
+  ConfigRuleRootAccessCheck:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: iam-root-access-key-check
+      Description: >-
+        A config rule that checks whether the root user access key is available.
+        The rule is COMPLIANT if the user access key does not exist.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_ROOT_ACCESS_KEY_CHECK
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleRootMFACheck:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: root-account-mfa-enabled
+      Description: >-
+        A Config rule that checks whether users of your AWS account require a
+        multi-factor authentication (MFA) device to sign in with root
+        credentials.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: ROOT_ACCOUNT_MFA_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRulePasswordPolicy:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: iam-password-policy
+      Description: >-
+        A Config rule that checks whether the account password policy for IAM
+        users meets the specified requirements.
+      Scope:
+        ComplianceResourceTypes: []
+      InputParameters:
+        RequireUppercaseCharacters: 'true'
+        RequireLowercaseCharacters: 'true'
+        RequireSymbols: 'true'
+        RequireNumbers: 'true'
+        MinimumPasswordLength: '14'
+        PasswordReusePrevention: '3'
+        MaxPasswordAge: '90'
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_PASSWORD_POLICY
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleCloudTrailEnabled:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: cloudtrail-enabled
+      Description: >-
+        A config rule that checks whether AWS CloudTrail is enabled in your AWS
+        account. Optionally, you can specify which S3 bucket, SNS topic, and
+        Amazon CloudWatch Logs ARN to use.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleCloudTrailLogValidation:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: cloudtrail-log-file-validation-enabled
+      Description: >-
+        A config rule that checks whether AWS CloudTrail creates a signed digest
+        file with logs. AWS recommends that the file validation must be enabled
+        on all trails. The rule is NON_COMPLIANT if the validation is not
+        enabled.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleCloudTrailEncryption:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: cloudtrail-encryption-enabled
+      Description: >-
+        A config rule that checks whether AWS CloudTrail is configured to use
+        the server side encryption (SSE) AWS Key Management Service (AWS KMS)
+        customer master key (CMK) encryption. The rule is COMPLIANT if the
+        KmsKeyId is defined.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_ENCRYPTION_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleCloudTrailCloudWatch:
+    Type: 'AWS::Config::ConfigRule'
+
+    Properties:
+      ConfigRuleName: cloudtrail-cloudwatch-logs-enabled
+      Description: >-
+        A config rule that checks whether AWS CloudTrail trails are configured
+        to send logs to Amazon CloudWatch Logs. The trail is NON_COMPLIANT if
+        the CloudWatchLogsLogGroupArn property of the trail is empty.
+      Scope:
+        ComplianceResourceTypes: []
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_CLOUD_WATCH_LOGS_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  ConfigRuleCloudTrailMultiRegion:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: multi-region-cloudtrail-enabled
+      Description: >-
+        A config rule that checks that there is at least one multi-region AWS
+        CloudTrail. The rule is NON_COMPLIANT if the trails do not match inputs
+        parameters.
+      Scope:
+        ComplianceResourceTypes: []
+      InputParameters:
+        includeManagementEvents: 'true'
+        readWriteType: ALL
+      Source:
+        Owner: AWS
+        SourceIdentifier: MULTI_REGION_CLOUD_TRAIL_ENABLED
+      MaximumExecutionFrequency: TwentyFour_Hours
+
+  # This rule becomes effective only when/if CloudTrail configuration
+  # is standardized across all AWS accounts to use a bucket named
+  # cu-cloudtrail-logs-${AWS::AccountId} as it's target
+  ConfigRuleBucketVersioningEnabled:
+    Type: 'AWS::Config::ConfigRule'
+    DeletionPolicy: Retain
+    Properties:
+      ConfigRuleName: cloudtrail-bucket-versioning-enabled
+      Description: >-
+        A Config rule that checks whether versioning is enabled for the S3
+        buckets that holds CloudTrail logs. Optionally, the rule checks if
+        MFA delete is enabled for your S3 buckets.
+      Scope:
+        ComplianceResourceId: !Sub "cu-cloudtrail-logs-${AWS::AccountId}"
+        ComplianceResourceTypes:
+          - 'AWS::S3::Bucket'
+      InputParameters:
+        isMfaDeleteEnabled: 'true'
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_VERSIONING_ENABLED
