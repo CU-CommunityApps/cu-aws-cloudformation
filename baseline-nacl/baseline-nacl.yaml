@@ -1,6 +1,14 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: "Create a standard baseline Network ACL. Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/tree/master/baseline-nacl"
+###############################################################################
+# Change Log
+# v2.0:
+#   - Add rules to allow egress to LDAP servers outside of
+#     Cornell campus IP space.
+#   - Reduce rule count for Kerberos by allowing all types of 
+#     traffic to/from Kerberos servers.
+###############################################################################
 
 Parameters:
   TargetVPCParam:
@@ -21,6 +29,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref NACLNameParam
+        - Key: Version
+          Value: "2.0"
       VpcId: !Ref TargetVPCParam
 
   NetworkACLRuleIn0100:
@@ -102,26 +112,9 @@ Resources:
     Properties:
       CidrBlock: 52.200.35.38/32
       NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 6
+      Protocol: -1
       RuleAction : allow
       RuleNumber : 610
-
-  # Elastic IP of AWS-based Cornell Kerberos Server
-  # kerberos-aws.login.cornell.edu
-  NetworkACLRuleIn0611:
-    Type: AWS::EC2::NetworkAclEntry
-    Properties:
-      CidrBlock: 52.200.35.38/32
-      NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 17
-      RuleAction : allow
-      RuleNumber : 611
 
   # Elastic IP of AWS-based Cornell Kerberos Server
   # kerberos-aws2.login.cornell.edu
@@ -130,26 +123,9 @@ Resources:
     Properties:
       CidrBlock: 52.201.66.104/32
       NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 6
+      Protocol: -1
       RuleAction : allow
       RuleNumber : 620
-
-  # Elastic IP of AWS-based Cornell Kerberos Server
-  # kerberos-aws2.login.cornell.edu
-  NetworkACLRuleIn0621:
-    Type: AWS::EC2::NetworkAclEntry
-    Properties:
-      CidrBlock: 52.201.66.104/32
-      NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 17
-      RuleAction : allow
-      RuleNumber : 621
 
   NetworkACLRuleIn0700:
     Type: AWS::EC2::NetworkAclEntry
@@ -310,27 +286,9 @@ Resources:
       Egress: true
       CidrBlock: 52.200.35.38/32
       NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 6
+      Protocol: -1
       RuleAction : allow
       RuleNumber : 610
-
-  # Elastic IP of AWS-based Cornell Kerberos Server
-  # kerberos-aws.login.cornell.edu
-  NetworkACLRuleOut0611:
-    Type: AWS::EC2::NetworkAclEntry
-    Properties:
-      Egress: true
-      CidrBlock: 52.200.35.38/32
-      NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 17
-      RuleAction : allow
-      RuleNumber : 611
 
   # Elastic IP of AWS-based Cornell Kerberos Server
   # kerberos-aws2.login.cornell.edu
@@ -340,27 +298,9 @@ Resources:
       Egress: true
       CidrBlock: 52.201.66.104/32
       NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 6
+      Protocol: -1
       RuleAction : allow
       RuleNumber : 620
-
-  # Elastic IP of AWS-based Cornell Kerberos Server
-  # kerberos-aws2.login.cornell.edu
-  NetworkACLRuleOut0621:
-    Type: AWS::EC2::NetworkAclEntry
-    Properties:
-      Egress: true
-      CidrBlock: 52.201.66.104/32
-      NetworkAclId: !Ref VPCNetworkACL
-      PortRange:
-        From: 88
-        To: 88
-      Protocol: 17
-      RuleAction : allow
-      RuleNumber : 621
 
   NetworkACLRuleOut0700:
     Type: AWS::EC2::NetworkAclEntry
@@ -431,3 +371,59 @@ Resources:
       Protocol: -1
       RuleAction : allow
       RuleNumber : 1300
+
+  # Elastic IP of AWS-based TEST directory (test.directory.cornell.edu)
+  # IP address #1
+  # All protocols/ports are allowed since this IP may eventually be used 
+  # for other services.
+  NetworkACLRuleOut1400:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 35.170.14.255/32
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1400
+
+  # Elastic IP of AWS-based TEST directory (test.directory.cornell.edu)
+  # IP address #2
+  # All protocols/ports are allowed since this IP may eventually be used 
+  # for other services.
+  NetworkACLRuleOut1500:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 3.229.3.150/32
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1500
+
+  # Elastic IP of AWS-based PROD directory (query.directory.cornell.edu)
+  # IP address #1
+  # All protocols/ports are allowed since this IP may eventually be used 
+  # for other services.
+  NetworkACLRuleOut1600:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 3.228.209.25/32
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1600
+
+  # Elastic IP of AWS-based PROD directory (query.directory.cornell.edu)
+  # IP address #2
+  # All protocols/ports are allowed since this IP may eventually be used 
+  # for other services.
+  NetworkACLRuleOut1700:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      Egress: true
+      CidrBlock: 3.218.140.210/32
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1700
