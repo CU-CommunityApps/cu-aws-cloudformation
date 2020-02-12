@@ -10,7 +10,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: iam-root-access-key-check
+      ConfigRuleName: BETA-iam-root-access-key-check
       Description: >-
         A config rule that checks whether the root user access key is available.
         The rule is COMPLIANT if the user access key does not exist.
@@ -25,7 +25,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: root-account-mfa-enabled
+      ConfigRuleName: BETA-root-account-mfa-enabled
       Description: >-
         A Config rule that checks whether users of your AWS account require a
         multi-factor authentication (MFA) device to sign in with root
@@ -41,7 +41,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: iam-password-policy
+      ConfigRuleName: BETA-iam-password-policy
       Description: >-
         A Config rule that checks whether the account password policy for IAM
         users meets the specified requirements.
@@ -64,7 +64,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: cloudtrail-enabled
+      ConfigRuleName: BETA-cloudtrail-enabled
       Description: >-
         A config rule that checks whether AWS CloudTrail is enabled in your AWS
         account. Optionally, you can specify which S3 bucket, SNS topic, and
@@ -80,7 +80,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: cloudtrail-log-file-validation-enabled
+      ConfigRuleName: BETA-cloudtrail-log-file-validation-enabled
       Description: >-
         A config rule that checks whether AWS CloudTrail creates a signed digest
         file with logs. AWS recommends that the file validation must be enabled
@@ -97,7 +97,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: cloudtrail-encryption-enabled
+      ConfigRuleName: BETA-cloudtrail-encryption-enabled
       Description: >-
         A config rule that checks whether AWS CloudTrail is configured to use
         the server side encryption (SSE) AWS Key Management Service (AWS KMS)
@@ -114,7 +114,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
 
     Properties:
-      ConfigRuleName: cloudtrail-cloudwatch-logs-enabled
+      ConfigRuleName: BETA-cloudtrail-cloudwatch-logs-enabled
       Description: >-
         A config rule that checks whether AWS CloudTrail trails are configured
         to send logs to Amazon CloudWatch Logs. The trail is NON_COMPLIANT if
@@ -130,7 +130,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: multi-region-cloudtrail-enabled
+      ConfigRuleName: BETA-multi-region-cloudtrail-enabled
       Description: >-
         A config rule that checks that there is at least one multi-region AWS
         CloudTrail. The rule is NON_COMPLIANT if the trails do not match inputs
@@ -152,7 +152,7 @@ Resources:
     Type: 'AWS::Config::ConfigRule'
     DeletionPolicy: Retain
     Properties:
-      ConfigRuleName: cloudtrail-bucket-versioning-enabled
+      ConfigRuleName: BETA-cloudtrail-bucket-versioning-enabled
       Description: >-
         A Config rule that checks whether versioning is enabled for the S3
         buckets that holds CloudTrail logs. Optionally, the rule checks if
