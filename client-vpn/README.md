@@ -1,6 +1,6 @@
 # cu-aws-cloudformation/client-vpn
 
-Example deployments of AWS Client VPN deployment
+Example deployment of AWS Client VPN
 
 ## AWS Client VPN with Directory Authentication
 
@@ -77,3 +77,26 @@ The following procedure is valid only when connecting from a network location no
 6. Download and install a Client VPN client appropriate to your system type.
 7. Follow these instructions for using the AWS Client VPN Client: https://docs.aws.amazon.com/vpn/latest/clientvpn-user/connect-aws-client-vpn-connect.html
 8. When you connect, you will be asked for a username and credentials known to the directory you used in the Client VPN deployment.
+
+## Notes
+
+### Cornell VPN
+
+AWS Client VPN is NOT a direct replacement for [Cornell VPN](https://it.cornell.edu/cuvpn). The configuration options and limitations of Client VPN are limited and it is nearly impossible to duplicate all the configuration of Cornell VPN in AWS Client VPN. However, there may be specific use cases where an AWS Client VPN deployment may fill needs better than Cornell VPN.
+
+### Split Tunneling 
+This example deployment uses a split tunnel so that only traffic targeted to the local VPC, Cornell campus public IPs, or Cornell private networks flows through the VPN from the client. Traffic for other IPs do not use the Client VPN. See [Split-Tunnel on AWS Client VPN Endpoints](https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/split-tunnel-vpn.html).
+
+### Access Restrictions
+
+This example deployment configures very broad network access for VPN clients. However, the Client VPN can support restrictive network access models, and also models that authorize specific access depending on directory group memebership. See https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/scenario.html and https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/cvpn-working-rules.html.
+
+### Mutual Authentication
+
+Client VPNs can be configured to use certificate-based authentication, thus dispensing with the need for a directoy. However, certificate-based authentication requires careful certificate management and secure distribution, so it can be hard to implement logistically, depending on number of types of users.
+
+### Route Limits
+
+Each Client VPN can have only 10 routes and those routes cannot specify overlapping CIDR blocks. 
+
+Since the CIDR block of the VPCs to which the Client VPN is associated are automatically added to the VPN routes, you cannot add a route for a large CIDR block that includes the VPC CIDR block. E.g., if we have associated the VPN with a VPC having CIDR block 10.92.76.0/22, then we CANNOT add a single route for 10.0.0.0/8 if we want to route to all other addresses in 10.0.0.0/8. Instead we need to break 10.0.0.0/8 into sub-blocks that represents 10.0.0.0/8 with 10.92.76.0/22 removed. This is why the example deployment here does not offer to route both private Cornell network space and public Cornell campus IPs at the same time. We run into the route limit.
