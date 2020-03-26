@@ -1,4 +1,4 @@
-# cu-aws-cloudformation/client-vpn
+# client-vpn
 
 Example deployment of AWS Client VPN
 
