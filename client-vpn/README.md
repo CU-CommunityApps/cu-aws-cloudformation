@@ -93,7 +93,7 @@ This example deployment configures very broad network access for VPN clients. Ho
 
 ### Mutual Authentication
 
-Client VPNs can be configured to use certificate-based authentication, thus dispensing with the need for a directoy. However, certificate-based authentication requires careful certificate management and secure distribution, so it can be hard to implement logistically, depending on number of types of users.
+Client VPNs can be configured to use certificate-based authentication, thus dispensing with the need for a directory. However, certificate-based authentication requires careful certificate management and secure distribution so it can be hard to implement logistically, depending on number of types of users.
 
 ### Route Limits
 
