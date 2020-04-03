@@ -170,6 +170,7 @@ Resources:
   RoutePeered:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePeered
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to peered VPC
@@ -179,6 +180,7 @@ Resources:
   Route12884:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 128.84.0.0/16 network
@@ -188,6 +190,7 @@ Resources:
   Route128253:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 128.253.0.0/16 network
@@ -197,6 +200,7 @@ Resources:
   Route132236:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 132.236.0.0/16 network
@@ -206,6 +210,7 @@ Resources:
   Route19235:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 192.35.82.0/24 network
@@ -215,6 +220,7 @@ Resources:
   Route192122235:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 192.122.235.0/24 network
@@ -224,6 +230,7 @@ Resources:
   Route192122236:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePublic
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: Route to public campus 192.122.236.0/24 network
@@ -233,6 +240,7 @@ Resources:
   Route100:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 1
@@ -242,6 +250,7 @@ Resources:
   Route1064:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 2
@@ -251,6 +260,7 @@ Resources:
   Route1080:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 3
@@ -260,6 +270,7 @@ Resources:
   Route1088:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 4
@@ -269,6 +280,7 @@ Resources:
   Route1088:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 4
@@ -280,6 +292,7 @@ Resources:
   Route1096:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 5
@@ -289,6 +302,7 @@ Resources:
   Route10112:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 6
@@ -298,6 +312,7 @@ Resources:
   Route10128:
     Type: AWS::EC2::ClientVpnRoute
     Condition: RoutePrivate
+    DependsOn: ClientVPNAssociation
     Properties: 
       ClientVpnEndpointId: !Ref ClientVPN
       Description: 10-space routing, part 7
