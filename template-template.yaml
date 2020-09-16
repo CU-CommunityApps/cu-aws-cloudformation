@@ -1,0 +1,53 @@
+---
+# This is a standard starting point for CloudFormation templates.
+# It contains placeholders for useful metadata and standard parameters
+# to be used in a standard set of tags applied to resources created by the
+# template. These tags can help quickly those identify resources in the wild.
+# 
+# Note that not all AWS resource types accept the "Tags" property in their 
+# CloudFormation resource specification.
+# 
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Resources for Cornell standard SomeResource. Do not alter. Contact cloud-support@cornell.edu with questions.
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: recommended-stack-name
+
+Parameters:
+
+  VersionParam:
+    Description: CIT template version
+    Default: "1.0.0"
+    Type: String
+    
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+    
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/REPO/PATH/FILE.yaml
+    Type: String
+    
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  SomeResource:
+    Type: AWS::SERVICE::RESOURCE
+    DeletionPolicy: Retain # or Delete or Snapshot
+    Properties:
+      # Resource prooperties here
+      Tags: 
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
