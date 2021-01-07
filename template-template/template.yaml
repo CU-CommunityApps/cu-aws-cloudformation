@@ -12,15 +12,22 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Resources for Cornell standard SomeResource. Do not alter. Contact cloud-support@cornell.edu with questions.
 
 Metadata:
-  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template.yaml
-  Version: "1.0.0"
-  RecommendedStackName: recommended-stack-name
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template/template.yaml
+  Version: "1.0.1"
+  RecommendedStackName: $ENV-recommended-stack-name
+  ChangeLog:
+    "1.0.1":
+      - added change log
+      - added deployment script
+      - added EnvironmentParam
+      - added DocumentationURLParam
+    "1.0.0":
+      - inital release
 
 Parameters:
 
   VersionParam:
     Description: CIT template version
-    Default: "1.0.0"
     Type: String
     
   ContactEmailParam:
@@ -30,21 +37,41 @@ Parameters:
     
   SourceURLParam:
     Description: URL of this template in source code repository (not necessarily public)
-    Default: https://github.com/CU-CommunityApps/REPO/PATH/FILE.yaml
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template/template.yaml
     Type: String
-    
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: dev
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/documentation/of/this/deployment
+    Type: String
+
 Mappings: {}
 
 Conditions: {} 
 
 Resources:
 
-  SomeResource:
+  ExampleTemplateResource:
     Type: AWS::SERVICE::RESOURCE
-    DeletionPolicy: Retain # or Delete or Snapshot
+    DeletionPolicy: Delete # or Retain or Snapshot
     Properties:
       # Resource prooperties here
-      Tags: 
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: This is the description of this specific resource.
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
         - Key: cit:contact-email
           Value: !Ref ContactEmailParam
         - Key: cit:version
