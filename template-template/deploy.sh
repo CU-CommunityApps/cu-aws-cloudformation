@@ -43,7 +43,12 @@ echo "########## DEPLOY ##########"
 aws cloudformation deploy \
   --template-file $TARGET_TEMPLATE \
   --stack-name $STACK_NAME \
+  --no-fail-on-empty-changeset \
   $CAPABILITIES \
   --parameter-overrides \
       VersionParam="$TEMPLATE_VERSION" \
       EnvironmentParam="$ENV"
+
+aws cloudformation update-termination-protection \
+  --enable-termination-protection \
+  --stack-name $STACK_NAME
