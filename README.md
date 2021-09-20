@@ -7,5 +7,6 @@ This repo is a collection of standard, official templates used by the Cornell CI
 - [ses](ses) creates IAM policy and user group for sending email using SES
 - [shib-dba](shib-dba) creates an IAM Role that grants privileges for DBAs to function within AWS with RDS, EC2, etc.
 - [shib-ec2emr](shib-ec2emr) creates an IAM Role that grants privileges that would be useful to data scientists.
+- [sns-teams-relay](sns-teams-relay) creates a Lambda function to relay SNS messages to Microsoft Teams
 - [standard-vpc](standard-vpc) creates a Cornell Standard VPC
 - [template-template](template-template) -- a standard starting point for new CloudFormation templates, including a helpful script
