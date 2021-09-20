@@ -1,6 +1,6 @@
 # sns-teams-relay
 
-CloudFormation template for creating a Lambda function to relay SNS message to Microsoft Teams
+CloudFormation template for creating a Lambda function to relay SNS messages to Microsoft Teams.
 
 ## Contents
 
