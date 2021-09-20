@@ -1,0 +1,127 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Resources to relay SNS messages to a Microsoft Teams webhook.
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: sns-teams-relay-$ENV
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+
+  VersionParam:
+    Description: CIT template version
+    Type: String
+    
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+    
+  SourceURLParam:
+    Description: URL of this template in source code repository
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: dev
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/documentation/of/this/deployment
+    Type: String
+
+  TeamsWebhookURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Type: String
+
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  SNStoTeamsRelay:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code: lambda/
+      # CodeSigningConfigArn: String
+      # DeadLetterConfig: 
+      #   DeadLetterConfig
+      Description: Relay incoming SNS messages to a Microsoft Teams webhook
+      Environment: 
+        Variables:
+          WEBHOOK_URL: !Ref TeamsWebhookURLParam
+      # FileSystemConfigs: 
+      #   - FileSystemConfig
+      FunctionName: !Sub "sns-teams-relay-${EnvironmentParam}"
+      Handler: sns-teams-relay.handler
+      # ImageConfig: 
+      #   ImageConfig
+      # KmsKeyArn: String
+      # Layers: 
+      #   - String
+      MemorySize: 128
+      PackageType: Zip
+      # ReservedConcurrentExecutions: Integer
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: This is the description of this specific resource.
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+      Timeout: 10
+      # TracingConfig: 
+      #   TracingConfig
+      # VpcConfig: 
+      #   VpcConfig
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Description: Role to allow Lambda execution for sns-teams-relay
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      RoleName: !Sub "sns-teams-relay-${EnvironmentParam}-lambda-execution-role"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: This is the description of this specific resource.
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
