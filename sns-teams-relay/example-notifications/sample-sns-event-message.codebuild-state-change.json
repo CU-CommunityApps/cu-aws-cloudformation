@@ -1,0 +1,48 @@
+{
+  "account": "123456789012",
+  "detailType": "CodeBuild Build State Change",
+  "region": "us-east-1",
+  "source": "aws.codebuild",
+  "time": "2021-09-22T20:10:51Z",
+  "notificationRuleArn": "arn:aws:codestar-notifications:us-east-1:123456789012:notificationrule/df335ffaa73726c95e794a22a95fc47118b716be",
+  "detail": {
+    "build-status": "IN_PROGRESS",
+    "project-name": "sns-teams-relay-dev",
+    "build-id": "arn:aws:codebuild:us-east-1:123456789012:build/sns-teams-relay-dev:729d7eab-7081-4801-9797-da2bbb4619fe",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "timeout-in-minutes": 60.0,
+      "build-complete": false,
+      "initiator": "some-role/some-user",
+      "build-start-time": "Sep 22, 2021 8:10:51 PM",
+      "source": {
+        "git-clone-depth": 1.0,
+        "type": "NO_SOURCE"
+      },
+      "artifact": {
+        "location": ""
+      },
+      "environment": {
+        "image": "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
+        "privileged-mode": false,
+        "image-pull-credentials-type": "CODEBUILD",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": []
+      },
+      "logs": {
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=null;stream=null"
+      },
+      "queued-timeout-in-minutes": 480.0
+    },
+    "current-phase": "SUBMITTED",
+    "current-phase-context": "[]",
+    "version": "1"
+  },
+  "resources": [
+    "arn:aws:codebuild:us-east-1:123456789012:build/sns-teams-relay-dev:729d7eab-7081-4801-9797-da2bbb4619fe"
+  ],
+  "additionalAttributes": {}
+}
