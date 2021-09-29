@@ -1,0 +1,114 @@
+{
+  "account": "123456789012",
+  "detailType": "CodeBuild Build Phase Change",
+  "region": "us-east-1",
+  "source": "aws.codebuild",
+  "time": "2021-09-28T19:50:58Z",
+  "notificationRuleArn": "arn:aws:codestar-notifications:us-east-1:123456789012:notificationrule/df335ffaa73726c95e794a22a95fc47118b716be",
+  "detail": {
+    "completed-phase": "PRE_BUILD",
+    "project-name": "sns-teams-relay-dev",
+    "build-id": "arn:aws:codebuild:us-east-1:123456789012:build/sns-teams-relay-dev:8947fa66-22c2-4a77-87d3-f0b7f23170d9",
+    "completed-phase-context": "[: ]",
+    "additional-information": {
+      "cache": {
+        "type": "NO_CACHE"
+      },
+      "build-number": 5.0,
+      "timeout-in-minutes": 60.0,
+      "build-complete": false,
+      "initiator": "some-role/some-user",
+      "build-start-time": "Sep 28, 2021 7:50:38 PM",
+      "source": {
+        "git-clone-depth": 1.0,
+        "type": "NO_SOURCE"
+      },
+      "artifact": {
+        "location": ""
+      },
+      "environment": {
+        "image": "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
+        "privileged-mode": false,
+        "image-pull-credentials-type": "CODEBUILD",
+        "compute-type": "BUILD_GENERAL1_SMALL",
+        "type": "LINUX_CONTAINER",
+        "environment-variables": []
+      },
+      "logs": {
+        "deep-link": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=null;stream=null"
+      },
+      "phases": [
+        {
+          "phase-context": [],
+          "start-time": "Sep 28, 2021 7:50:38 PM",
+          "end-time": "Sep 28, 2021 7:50:38 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "SUBMITTED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [],
+          "start-time": "Sep 28, 2021 7:50:38 PM",
+          "end-time": "Sep 28, 2021 7:50:39 PM",
+          "duration-in-seconds": 1.0,
+          "phase-type": "QUEUED",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Sep 28, 2021 7:50:39 PM",
+          "end-time": "Sep 28, 2021 7:50:55 PM",
+          "duration-in-seconds": 16.0,
+          "phase-type": "PROVISIONING",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Sep 28, 2021 7:50:55 PM",
+          "end-time": "Sep 28, 2021 7:50:58 PM",
+          "duration-in-seconds": 2.0,
+          "phase-type": "DOWNLOAD_SOURCE",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Sep 28, 2021 7:50:58 PM",
+          "end-time": "Sep 28, 2021 7:50:58 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "INSTALL",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "phase-context": [
+            ": "
+          ],
+          "start-time": "Sep 28, 2021 7:50:58 PM",
+          "end-time": "Sep 28, 2021 7:50:58 PM",
+          "duration-in-seconds": 0.0,
+          "phase-type": "PRE_BUILD",
+          "phase-status": "SUCCEEDED"
+        },
+        {
+          "start-time": "Sep 28, 2021 7:50:58 PM",
+          "phase-type": "BUILD"
+        }
+      ],
+      "queued-timeout-in-minutes": 480.0
+    },
+    "completed-phase-status": "SUCCEEDED",
+    "completed-phase-duration-seconds": 0.0,
+    "version": "1",
+    "completed-phase-start": "Sep 28, 2021 7:50:58 PM",
+    "completed-phase-end": "Sep 28, 2021 7:50:58 PM"
+  },
+  "resources": [
+    "arn:aws:codebuild:us-east-1:123456789012:build/sns-teams-relay-dev:8947fa66-22c2-4a77-87d3-f0b7f23170d9"
+  ],
+  "additionalAttributes":
+}

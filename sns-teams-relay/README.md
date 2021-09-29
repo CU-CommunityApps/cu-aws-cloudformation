@@ -5,7 +5,9 @@ CloudFormation template for creating a Lambda function to relay SNS messages to 
 ## Contents
 
 - [deploy.sh](deploy.sh) -- Bash script to deploy the template
+- [invoke.sh](invoke.sh) -- Bash script to invoke the Lambda with example data
 - [template.yaml](template.yaml) -- CloudFormation template
+- [example-notifications](example-notifications/) -- Examples of SNS and message content
 
 ## Prerequisites for `deploy.sh` and `invoke.sh` script
 

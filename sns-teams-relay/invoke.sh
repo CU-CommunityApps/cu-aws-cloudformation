@@ -6,7 +6,7 @@ ENV=${ENV:-dev}
 
 aws lambda invoke \
     --function-name sns-teams-relay-${ENV} \
-    --payload file://sample-event.json \
+    --payload file://example-notifications/sample-sns-event.plain.json \
     --log-type Tail \
     --cli-binary-format raw-in-base64-out \
     response.out.json

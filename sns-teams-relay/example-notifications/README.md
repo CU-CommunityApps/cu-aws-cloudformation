@@ -1,0 +1,1 @@
+This directory contains example SNS messages and example notification data from CodeBuild that gets embedded in the SNS `message` field.
