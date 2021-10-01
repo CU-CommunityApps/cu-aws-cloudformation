@@ -1,0 +1,13 @@
+  "region": "us-east-1",
+  "consoleLink": "https: //console.aws.amazon.com/codesuite/codepipeline/pipelines/tf-jenkins-update-apply-pipeline/view?region=us-east-1",
+  "approval": {
+    "pipelineName": "tf-jenkins-update-apply-pipeline",
+    "stageName": "Approval",
+    "actionName": "Approval",
+    "token": "db70b4c2-89a9-4257-aa81-6c4d3cfa064b",
+    "expires": "2021-10-06T17:37Z",
+    "externalEntityLink": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/aws/codebuild/tf-jenkins-update-plan;streamFilter=typeLogStreamPrefix",
+    "approvalReviewLink": "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/tf-jenkins-update-apply-pipeline/view?region=us-east-1#/Approval/Approval/approve/db70b4c2-89a9-4257-aa81-6c4d3cfa064b",
+    "customData": "CustomData"
+  }
+}

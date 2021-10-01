@@ -1,0 +1,22 @@
+{
+    "Records": [
+        {
+            "EventSource": "aws:sns",
+            "EventVersion": "1.0",
+            "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:tf-jenkins-update-notify:6b42c870-cb11-4983-a1f7-dc505fb441ae",
+            "Sns": {
+                "Type": "Notification",
+                "MessageId": "a4dfec92-3bea-5bac-8887-b55c9d4b9264",
+                "TopicArn": "arn:aws:sns:us-east-1:123456789012:tf-jenkins-update-notify",
+                "Subject": "APPROVAL NEEDED: AWS CodePipeline tf-jenkins-update-apply-... for action Approval",
+                "Message": "{\"region\":\"us-east-1\",\"consoleLink\":\"https://console.aws.amazon.com/codesuite/codepipeline/pipelines/tf-jenkins-update-apply-pipeline/view?region=us-east-1\",\"approval\":{\"pipelineName\":\"tf-jenkins-update-apply-pipeline\",\"stageName\":\"Approval\",\"actionName\":\"Approval\",\"token\":\"db70b4c2-89a9-4257-aa81-6c4d3cfa064b\",\"expires\":\"2021-10-06T17:37Z\",\"externalEntityLink\":\"https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/aws/codebuild/tf-jenkins-update-plan;streamFilter=typeLogStreamPrefix\",\"approvalReviewLink\":\"https://console.aws.amazon.com/codesuite/codepipeline/pipelines/tf-jenkins-update-apply-pipeline/view?region=us-east-1#/Approval/Approval/approve/db70b4c2-89a9-4257-aa81-6c4d3cfa064b\",\"customData\":\"CustomData\"}}",
+                "Timestamp": "2021-09-29T17:37:37.563Z",
+                "SignatureVersion": "1",
+                "Signature": "YT/Yzl/TttSv1j/yZfw64ctL29OU+lbkkwR8pcTNyRyt5IQUY2UVpu87LxOYMOZUN/9m6FSJHW7ZJZ4eUWqKFz1pizsAKYd9Yzjzn4l4yXH+X6Q+7CA0VjvXAkHVTJr8f/3ubJokSZW9W4OiyCehAtdlNs2U1YZry2t2NgG89QAIeAKXXladiQyQMDMxbpNZT02ucAjLb1nl8PQpH6LXE61RIgQjlHCApYx1BzJ65NErejFh+7zQfE5UIcklq5HVNC9lXctIoMPWRWWL4cnSXCGfWAIo/7hNww3/letXTyW4pHeOaWR4fLsabTsVIwda7BbNd5nuYilVUQax2BzRiw==",
+                "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-7ff5318490ec183fbaddaa2a969abfda.pem",
+                "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:123456789012:tf-jenkins-update-notify:6b42c870-cb11-4983-a1f7-dc505fb441ae",
+                "MessageAttributes": {}
+            }
+        }
+    ]
+}

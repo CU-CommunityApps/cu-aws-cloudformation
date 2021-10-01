@@ -1,0 +1,32 @@
+{
+  "account": "123456789012",
+  "detailType": "CodePipeline Action Execution State Change",
+  "region": "us-east-1",
+  "source": "aws.codepipeline",
+  "time": "2021-09-29T18:30:52Z",
+  "notificationRuleArn": "arn:aws:codestar-notifications:us-east-1:123456789012:notificationrule/a075e18584e03a7159f711788d5526db38c512b4",
+  "detail": {
+    "pipeline": "random-pipeline",
+    "execution-id": "3b2b283b-2d7b-4d5e-92c9-feff26764009",
+    "stage": "Approval",
+    "execution-result": {
+      "external-execution-summary": "Rejected by arn:aws:sts::123456789012:assumed-role/shib-xyz/abc123@cornell.edu",
+      "external-execution-id": "094fc7c3-c662-44fc-8f30-4c471c9a7bda",
+      "error-code": "JobFailed"
+    },
+    "action": "Approval",
+    "state": "FAILED",
+    "region": "us-east-1",
+    "type": {
+      "owner": "AWS",
+      "provider": "Manual",
+      "category": "Approval",
+      "version": "1"
+    },
+    "version": 1.0
+  },
+  "resources": [
+    "arn:aws:codepipeline:us-east-1:123456789012:random-pipeline"
+  ],
+  "additionalAttributes":
+}

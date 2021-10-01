@@ -2,6 +2,13 @@
 
 CloudFormation template for creating a Lambda function to relay SNS messages to Microsoft Teams.
 
+The Lambda attempts to provide decent formatting for these specific types of AWS notifications:
+- SNS with plain `subject` and `message` fields
+- `CodeBuild Build State Change`
+- `CodeBuild Build Phase Change`
+
+See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sns-teams-relay) for a Terraform module to deploy similar functionality with Terraform.
+
 ## Contents
 
 - [deploy.sh](deploy.sh) -- Bash script to deploy the template

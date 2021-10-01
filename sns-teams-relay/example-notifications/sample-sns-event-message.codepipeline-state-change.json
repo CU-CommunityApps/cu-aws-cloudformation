@@ -1,0 +1,24 @@
+[
+  {
+    "account": "123456789012",
+    "detailType": "CodePipeline Pipeline Execution State Change",
+    "region": "us-east-1",
+    "source": "aws.codepipeline",
+    "time": "2021-09-29T17:25:23Z",
+    "notificationRuleArn": "arn:aws:codestar-notifications:us-east-1:123456789012:notificationrule/a0bcb807447f9a3b73cef99f20dde7982c1fa539",
+    "detail": {
+      "pipeline": "tf-jenkins-update-apply-pipeline",
+      "execution-id": "d8fcecc5-d21a-4007-99c0-f4063b2192b1",
+      "execution-trigger": {
+        "trigger-type": "StartPipelineExecution",
+        "trigger-detail": "arn:aws:sts::123456789012:assumed-role/shib-admin/abc123@cornell.edu"
+      },
+      "state": "STARTED",
+      "version": 6.0
+    },
+    "resources": [
+      "arn:aws:codepipeline:us-east-1:123456789012:tf-jenkins-update-apply-pipeline"
+    ],
+    "additionalAttributes":
+  }
+]
