@@ -6,6 +6,9 @@ The Lambda attempts to provide decent formatting for these specific types of AWS
 - SNS with plain `subject` and `message` fields
 - `CodeBuild Build State Change`
 - `CodeBuild Build Phase Change`
+- `CodePipeline Pipeline Execution State Change`
+- `CodePipeline Action Execution State Change`
+- CodePipeline Manual Approval notifications
 
 See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sns-teams-relay) for a Terraform module to deploy similar functionality with Terraform.
 
