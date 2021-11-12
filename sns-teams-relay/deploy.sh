@@ -16,7 +16,8 @@
 # Bucket to use for temporary location for Lambda/CloudFormation deploy package
 S3_BUCKET=CHANGE_ME
 # Your Teams webhook URL
-WEBHOOK_URL=https://cornellprod.webhook.office.com/CHANGE_ME
+WEBHOOK_URL_NORMAL=https://cornellprod.webhook.office.com/CHANGE_ME
+WEBHOOK_URL_ALERT=https://cornellprod.webhook.office.com/CHANGE_ME
 ENV=${ENV:-dev}
 ###############################################################################
 
@@ -29,13 +30,13 @@ STACK_NAME=$(eval "echo $STACK_NAME")
 
 echo "########## PROPERTIES ##########"
 echo "Template: $TARGET_TEMPLATE"
-echo "Depoying/Updating stack: $STACK_NAME"
+echo "Deploying/Updating stack: $STACK_NAME"
 echo "Deploying template version: $TEMPLATE_VERSION"
 
 echo "########## LINT ##########"
 cfn-lint $TARGET_TEMPLATE
 
-echo "########## VALDIATE ##########"
+echo "########## VALIDATE ##########"
 set -e # Stop the script if it doesn't validate.
 aws cloudformation validate-template --template-body file://$TARGET_TEMPLATE
 
@@ -59,7 +60,8 @@ aws cloudformation deploy \
   --parameter-overrides \
       VersionParam="$TEMPLATE_VERSION" \
       EnvironmentParam="$ENV" \
-      TeamsWebhookURLParam="$WEBHOOK_URL"
+      TeamsWebhookNormalURLParam="$WEBHOOK_URL_NORMAL" \
+      TeamsWebhookAlertURLParam="$WEBHOOK_URL_ALERT"
 
 aws cloudformation update-termination-protection \
   --enable-termination-protection \

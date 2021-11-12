@@ -5,9 +5,11 @@ Description: Resources to relay SNS messages to a Microsoft Teams webhook.
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
-  Version: "1.0.0"
+  Version: "2.0.0"
   RecommendedStackName: sns-teams-relay-$ENV
   ChangeLog:
+    "2.0.0":
+      - Add support for two different webhook URLs: WEBHOOK_URL_NORMAL, WEBHOOK_URL_ALERT
     "1.0.0":
       - inital release
 
@@ -41,8 +43,12 @@ Parameters:
     Default: https://confluence.cornell.edu/documentation/of/this/deployment
     Type: String
 
-  TeamsWebhookURLParam:
-    Description: URL of documentation about this deployment or these resources
+  TeamsWebhookNormalURLParam:
+    Description: URL for your Teams webhook for success, warning, info messages
+    Type: String
+
+  TeamsWebhookAlertURLParam:
+    Description: URL for your Teams webhook for failure of any type
     Type: String
 
 Mappings: {}
@@ -61,7 +67,8 @@ Resources:
       Description: Relay incoming SNS messages to a Microsoft Teams webhook
       Environment: 
         Variables:
-          WEBHOOK_URL: !Ref TeamsWebhookURLParam
+          WEBHOOK_URL_NORMAL: !Ref TeamsWebhookNormalURLParam
+          WEBHOOK_URL_ALERT: !Ref TeamsWebhookAlertURLParam
       # FileSystemConfigs: 
       #   - FileSystemConfig
       FunctionName: !Sub "sns-teams-relay-${EnvironmentParam}"
