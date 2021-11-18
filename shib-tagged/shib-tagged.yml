@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Shib role for specifically tagged resource access.
+Parameters:
+  TagValue:
+    Description: Tag value name (ie. analytics)
+    Type: String
+  BucketName:
+    Description: S3 bucket name to grant access to
+    Type: String
+Resources:
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ '-', [ 'shib', !Ref TagValue ] ]
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:saml-provider/cornell_idp"
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+                SAML:aud: https://signin.aws.amazon.com/saml
+      Policies:
+        -
+          PolicyName: !Join [ '-', [ 'shib', 'tagged', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action: 's3:*'
+                Resource:
+                  - !Sub "arn:aws:s3:::${BucketName}"
+                  - !Sub "arn:aws:s3:::${BucketName}/*"
+              - 
+                Effect: Allow
+                Action: '*'
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/eds:team": !Ref TagValue
+              -
+                Effect: Allow
+                Action: 's3:ListAllMyBuckets'
+                Resource: 'arn:aws:s3:::*'
+              -
+                Effect: Allow
+                Action: 
+                  - 'dms:*'
+                Resource: '*'
+                  # - 'arn:aws:dms:us-east-1:022885931615:task:3NC2NZDWFDF5B37H5UDTMY2XXZQVPOCY74CGSCQ'
+                  # - 'arn:aws:dms:us-east-1:022885931615:rep:W5X6VLI72PUXIUKZYLACZMAMRUQM5TAX4GKXWBQ'
+                # Condition:
+                #   StringEquals:
+                #     "aws:ResourceTag/eds:team": !Ref TagValue
+              - 
+                Effect: Allow
+                Action: 
+                  - 'kms:ListAliases' 
+                  - 'kms:DescribeKey'
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - 'iam:GetRole'
+                  - 'iam:PassRole'
+                  - 'iam:CreateRole'
+                  - 'iam:AttachRolePolicy'
+                Resource: '*'
+              -
+                Effect: Allow
+                Action:
+                  - 'ec2:DescribeVpcs'
+                  - 'ec2:DescribeInternetGateways'
+                  - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:DescribeSubnets'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'ec2:ModifyNetworkInterfaceAttribute'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DeleteNetworkInterface'
+                Resource: '*'
+              -
+                Effect: Allow
+                Action:
+                  - 'cloudwatch:Get*'
+                  - 'cloudwatch:List*'
+                Resource: '*'
+              -
+                Effect: Deny
+                Action: 
+                  - aws:CreateTags
+                  - aws:DeleteTags
+                Resource: '*'
