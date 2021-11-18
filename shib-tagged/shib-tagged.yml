@@ -52,8 +52,6 @@ Resources:
                 Action: 
                   - 'dms:*'
                 Resource: '*'
-                  # - 'arn:aws:dms:us-east-1:022885931615:task:3NC2NZDWFDF5B37H5UDTMY2XXZQVPOCY74CGSCQ'
-                  # - 'arn:aws:dms:us-east-1:022885931615:rep:W5X6VLI72PUXIUKZYLACZMAMRUQM5TAX4GKXWBQ'
                 # Condition:
                 #   StringEquals:
                 #     "aws:ResourceTag/eds:team": !Ref TagValue
