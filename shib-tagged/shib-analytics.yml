@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Shib role for specifically tagged resource access.
+Parameters:
+  TagKey:
+    Description: Tag key to match between IAM role and resources (ie. eds:team)
+    Type: String
+  TagValue:
+    Description: Tag value name (ie. analytics)
+    Type: String
+  BucketName:
+    Description: S3 bucket name to grant access to
+    Type: String
+Resources:
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ '-', [ 'shib', !Ref TagValue ] ]
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:saml-provider/cornell_idp"
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+                SAML:aud: https://signin.aws.amazon.com/saml
+      Policies:
+        -
+          PolicyName: !Join [ '-', [ 's3', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action: 's3:*'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/*'
+              -
+                Effect: Allow
+                Action: 's3:ListAllMyBuckets'
+                Resource: '*'
+              - 
+                Effect: Deny
+                Action: 's3:PutBucketTagging'
+                Resource: '*'
+        -
+          PolicyName: !Join [ '-', [ 'dms', !Ref TagValue ] ]
+          PolicyDocument:
+            !Sub 
+              - |
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "dms:Describe*"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "dms:RemoveTagsFromResource",
+                                "dms:AddTagsToResource"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Deny"
+                        },
+                        {
+                            "Action": [
+                                "dms:TestConnection",
+                                "dms:ListTagsForResource",
+                                "dms:DescribeReplicationTaskIndividualAssessments",
+                                "dms:StartReplicationTask",
+                                "dms:StartReplicationTaskAssessmentRun",
+                                "dms:DescribeApplicableIndividualAssessments",
+                                "dms:DescribeReplicationTaskAssessmentRuns",
+                                "dms:StopReplicationTask",
+                                "dms:DescribeReplicationInstanceTaskLogs",
+                                "dms:DescribeTableStatistics",
+                                "dms:StartReplicationTaskAssessment",
+                                "dms:DescribeReplicationTaskAssessmentResults"
+                            ],
+                            "Resource": [
+                                "arn:aws:dms:*:${account}:rep:*",
+                                "arn:aws:dms:*:${account}:task:*"
+                            ],
+                            "Condition": {
+                                "StringEquals": {
+                                    "${key}": "${value}"
+                                }
+                            },
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "kms:ListAliases",
+                                "kms:DescribeKey"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "iam:GetRole"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "ec2:DescribeVpcs",
+                                "ec2:DescribeInternetGateways",
+                                "ec2:DescribeAvailabilityZones",
+                                "ec2:DescribeSubnets",
+                                "ec2:DescribeSecurityGroups"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "cloudwatch:Get*",
+                                "cloudwatch:List*"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        }
+                    ]
+                }
+              -
+                key: !Sub 'aws:ResourceTag/${TagKey}'
+                value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+                account: !Ref 'AWS::AccountId'
