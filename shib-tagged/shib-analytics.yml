@@ -16,6 +16,9 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Join [ '-', [ 'shib', !Ref TagValue ] ]
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
