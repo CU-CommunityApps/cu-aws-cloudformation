@@ -38,6 +38,8 @@ Resources:
             Statement:
               -
                 Effect: Allow
+                Principal:
+                  AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${IAMRole}'
                 Action: 's3:*'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
