@@ -33,6 +33,23 @@ Conditions:
   CreateDMS: !Equals [ !Ref DMSAccess, 'yes' ]
 
 Resources:
+  TagBasedResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Join [ '-', [ 'tagged', !Ref TagValue ] ]
+      Description: !Sub "A group that is based on a tag query - ${TagValue}"
+      ResourceQuery:
+        Type:
+          "TAG_FILTERS_1_0" 
+        Query:
+          ResourceTypeFilters: 
+            - "AWS::AllSupported" 
+          TagFilters:
+            - 
+              Key: !Ref TagKey
+              Values: 
+                - !Ref TagValue
+
   IAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -52,6 +69,30 @@ Resources:
               StringEquals:
                 SAML:aud: https://signin.aws.amazon.com/saml
                 
+  ResourceGroupPolicy:
+    DependsOn: TagBasedResourceGroup
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'resource', 'groups', !Ref TagValue ] ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action: 
+              - 'tag:*'
+              - 'resource-groups:ListGroups'
+            Resource: '*'
+          - 
+            Effect: Allow
+            Action: 
+              - 'resource-groups:List*'
+              - 'resource-groups:Get*'
+              - 'resource-groups:SearchResources'
+            Resource: !GetAtt TagBasedResourceGroup.Arn
+      Roles:
+        - !Ref IAMRole
+
   S3Policy:
     Condition: CreateS3
     Type: 'AWS::IAM::Policy'
