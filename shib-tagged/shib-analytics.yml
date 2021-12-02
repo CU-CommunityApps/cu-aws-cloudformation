@@ -16,7 +16,7 @@ Resources:
     Type: AWS::ResourceGroups::Group
     Properties:
       Name: !Join [ '-', [ 'tagged', !Ref TagValue ] ]
-      Description: !Sub "A group that is based on a tag query '${TagValue}'"
+      Description: !Sub "A group that is based on a tag query - ${TagValue}"
       ResourceQuery:
         Type:
           "TAG_FILTERS_1_0" 
