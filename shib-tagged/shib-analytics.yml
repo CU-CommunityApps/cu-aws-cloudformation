@@ -56,7 +56,7 @@ Resources:
               -
                 Effect: Allow
                 Action: 
-                  - 'resource-groups:SearchResources'
+                  - 'tag:*'
                   - 'resource-groups:ListGroups'
                 Resource: '*'
               - 
@@ -64,6 +64,7 @@ Resources:
                 Action: 
                   - 'resource-groups:List*'
                   - 'resource-groups:Get*'
+                  - 'resource-groups:SearchResources'
                 Resource: !GetAtt TagBasedResourceGroup.Arn
         -
           PolicyName: !Join [ '-', [ 's3', !Ref TagValue ] ]
