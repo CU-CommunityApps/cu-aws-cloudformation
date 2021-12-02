@@ -12,8 +12,25 @@ Parameters:
     Description: S3 bucket name to grant access to
     Type: String
 Resources:
+  TagBasedResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Join [ '-', [ 'tagged', !Ref TagValue ] ]
+      Description: !Sub "A group that is based on a tag query '${TagValue}'"
+      ResourceQuery:
+        Type:
+          "TAG_FILTERS_1_0" 
+        Query:
+          ResourceTypeFilters: 
+            - "AWS::AllSupported" 
+          TagFilters:
+            - 
+              Key: !Ref TagKey
+              Values: 
+                - !Ref TagValue
   IAMRole:
     Type: AWS::IAM::Role
+    DependsOn: TagBasedResourceGroup
     Properties:
       RoleName: !Join [ '-', [ 'shib', !Ref TagValue ] ]
       Tags:
@@ -32,14 +49,29 @@ Resources:
                 SAML:aud: https://signin.aws.amazon.com/saml
       Policies:
         -
+          PolicyName: !Join [ '-', [ 'resource', 'groups', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action: 
+                  - 'resource-groups:SearchResources'
+                  - 'resource-groups:ListGroups'
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action: 
+                  - 'resource-groups:List*'
+                  - 'resource-groups:Get*'
+                Resource: !GetAtt TagBasedResourceGroup.Arn
+        -
           PolicyName: !Join [ '-', [ 's3', !Ref TagValue ] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               -
                 Effect: Allow
-                Principal:
-                  AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${IAMRole}'
                 Action: 's3:*'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
