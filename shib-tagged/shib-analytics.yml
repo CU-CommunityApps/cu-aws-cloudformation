@@ -8,8 +8,8 @@ Parameters:
   TagValue:
     Description: Tag value name (ie. analytics)
     Type: String
-  BucketName:
-    Description: S3 bucket name to grant access to
+  BucketNamePrefix:
+    Description: Prefix for the S3 bucket name(s) to grant access to
     Type: String
 Resources:
   TagBasedResourceGroup:
@@ -47,7 +47,41 @@ Resources:
             Condition:
               StringEquals:
                 SAML:aud: https://signin.aws.amazon.com/saml
+      ManagedPolicyArns: 
+        - 'arn:aws:iam::aws:policy/ReadOnlyAccess'
       Policies:
+        - 
+          PolicyName: !Join [ '-', [ 'secrets', 'deny', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Deny
+                Action: 
+                  - 'secretsmanager:List*'
+                  - 'secretsmanager:Describe*'
+                  - 'secretsmanager:Get*'
+                Resource: '*'
+        - 
+          PolicyName: !Join [ '-', [ 's3', 'deny', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Deny
+                Action:
+                  - 's3:GetObjectVersionTorrent'
+                  - 's3:GetObjectAcl'
+                  - 's3:GetObject'
+                  - 's3:GetObjectTorrent'
+                  - 's3:GetObjectRetention'
+                  - 's3:GetObjectVersionTagging'
+                  - 's3:GetObjectVersionAcl'
+                  - 's3:GetObjectTagging'
+                  - 's3:GetObjectVersionForReplication'
+                  - 's3:GetObjectLegalHold'
+                  - 's3:GetObjectVersion'
+                NotResource: !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
         -
           PolicyName: !Join [ '-', [ 'resource', 'groups', !Ref TagValue ] ]
           PolicyDocument:
@@ -75,8 +109,8 @@ Resources:
                 Effect: Allow
                 Action: 's3:*'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
               -
                 Effect: Allow
                 Action: 's3:ListAllMyBuckets'
