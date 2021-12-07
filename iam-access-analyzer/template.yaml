@@ -1,0 +1,106 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Resources for IAM Access Analyzer resources to generate IAM Policies. See https://confluence.cornell.edu/x/f7IkGQ
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/iam-access-analyzer/template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: $ENV-access-analyzer-generator
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+
+  VersionParam:
+    Description: CIT template version
+    Type: String
+
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/iam-access-analyzer/template.yaml
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: dev
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/x/f7IkGQ
+    Type: String
+
+  # Cornell folks should see https://confluence.cornell.edu/x/f7IkGQ for the correct value for this parameter.
+  CloudTrailBucketNameParam:
+    Description: Name of the S3 bucket holding CloudTrail logs
+    Type: String
+
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  AccessAnalyzerPolicyGenerator:
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: Delete
+    Properties:
+      Description: Allows Access Analyzer policy generator to access CloudTrail data
+      Policies:
+        -
+          PolicyName: "access-analyzer"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: Allow
+                Action: cloudtrail:GetTrail
+                Resource: "*"
+              -
+                Effect: Allow
+                Action:
+                  - iam:GenerateServiceLastAccessedDetails
+                  - iam:GetServiceLastAccessedDetails
+                Resource: "*"
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${CloudTrailBucketNameParam}"
+                  - !Sub "arn:aws:s3:::${CloudTrailBucketNameParam}/*"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "access-analyzer.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: This is the description of this specific resource.
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
