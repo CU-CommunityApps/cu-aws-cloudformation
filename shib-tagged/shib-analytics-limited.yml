@@ -1,0 +1,256 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Shib-analytics role for specifically tagged resource access, without s3:CreateBucket
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-analytics-limited.yml
+  Version: "1.0.0"
+  RecommendedStackName: shib-analytics
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+  TagKey:
+    Description: Tag key to match between IAM role and resources (ie. eds:team)
+    Type: String
+  TagValue:
+    Description: Tag value name (ie. analytics)
+    Type: String
+  BucketNamePrefix:
+    Description: Prefix for the S3 bucket name(s) to grant access to
+    Type: String
+  BucketNamePrefix2:
+    Description: (If applicable) Prefix for the S3 bucket name(s) to grant access to
+    Type: String
+  BucketNamePrefix3:
+    Description: (If applicable) Prefix for the S3 bucket name(s) to grant access to
+    Type: String
+  BucketNamePrefix4:
+    Description: (If applicable) Prefix for the S3 bucket name(s) to grant access to
+    Type: String
+  BucketNamePrefix5:
+    Description: (If applicable) Prefix for the S3 bucket name(s) to grant access to
+    Type: String
+    Type: String
+
+Conditions:
+  NoBucket2: !Equals [ !Ref BucketNamePrefix2, '' ]
+  NoBucket3: !Equals [ !Ref BucketNamePrefix3, '' ]
+  NoBucket4: !Equals [ !Ref BucketNamePrefix4, '' ]
+  NoBucket5: !Equals [ !Ref BucketNamePrefix5, '' ]
+
+Resources:
+  TagBasedResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Join [ '-', [ 'tagged', !Ref TagValue ] ]
+      Description: !Sub "A group that is based on a tag query - ${TagValue}"
+      ResourceQuery:
+        Type:
+          "TAG_FILTERS_1_0" 
+        Query:
+          ResourceTypeFilters: 
+            - "AWS::AllSupported" 
+          TagFilters:
+            - 
+              Key: !Ref TagKey
+              Values: 
+                - !Ref TagValue
+  IAMRole:
+    Type: AWS::IAM::Role
+    DependsOn: TagBasedResourceGroup
+    Properties:
+      RoleName: !Join [ '-', [ 'shib', !Ref TagValue ] ]
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:saml-provider/cornell_idp"
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+                SAML:aud: https://signin.aws.amazon.com/saml
+      ManagedPolicyArns: 
+        - 'arn:aws:iam::aws:policy/ReadOnlyAccess'
+      Policies:
+        - 
+          PolicyName: !Join [ '-', [ 'secrets', 'deny', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Deny
+                Action: 
+                  - 'secretsmanager:List*'
+                  - 'secretsmanager:Describe*'
+                  - 'secretsmanager:Get*'
+                Resource: '*'
+        - 
+          PolicyName: !Join [ '-', [ 's3', 'deny', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Deny
+                Action:
+                  - 's3:GetObjectVersionTorrent'
+                  - 's3:GetObjectAcl'
+                  - 's3:GetObject'
+                  - 's3:GetObjectTorrent'
+                  - 's3:GetObjectRetention'
+                  - 's3:GetObjectVersionTagging'
+                  - 's3:GetObjectVersionAcl'
+                  - 's3:GetObjectTagging'
+                  - 's3:GetObjectVersionForReplication'
+                  - 's3:GetObjectLegalHold'
+                  - 's3:GetObjectVersion'
+                NotResource: 
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
+                  - !If [ NoBucket2, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix2}*/*' ]
+                  - !If [ NoBucket3, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix3}*/*' ]
+                  - !If [ NoBucket4, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix4}*/*' ]
+                  - !If [ NoBucket5, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix5}*/*' ]
+        -
+          PolicyName: !Join [ '-', [ 'resource', 'groups', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action: 
+                  - 'tag:*'
+                  - 'resource-groups:ListGroups'
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action: 
+                  - 'resource-groups:List*'
+                  - 'resource-groups:Get*'
+                  - 'resource-groups:SearchResources'
+                Resource: !GetAtt TagBasedResourceGroup.Arn
+        -
+          PolicyName: !Join [ '-', [ 's3', !Ref TagValue ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action: 's3:*'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
+                  - !If [ NoBucket2, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix2}*' ]
+                  - !If [ NoBucket2, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix2}*/*' ]
+                  - !If [ NoBucket3, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix3}*' ]
+                  - !If [ NoBucket3, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix3}*/*' ]
+                  - !If [ NoBucket4, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix4}*' ]
+                  - !If [ NoBucket4, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix4}*/*' ]
+                  - !If [ NoBucket5, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix5}*' ]
+                  - !If [ NoBucket5, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix5}*/*' ]
+              -
+                Effect: Allow
+                Action: 's3:ListAllMyBuckets'
+                Resource: '*'
+              - 
+                Effect: Deny
+                Action: 's3:PutBucketTagging'
+                Resource: '*'
+              -
+                Effect: Deny
+                Action: 's3:CreateBucket'
+                Resource: '*'
+        -
+          PolicyName: !Join [ '-', [ 'dms', !Ref TagValue ] ]
+          PolicyDocument:
+            !Sub 
+              - |
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "dms:Describe*"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "dms:RemoveTagsFromResource",
+                                "dms:AddTagsToResource"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Deny"
+                        },
+                        {
+                            "Action": [
+                                "dms:TestConnection",
+                                "dms:ListTagsForResource",
+                                "dms:DescribeReplicationTaskIndividualAssessments",
+                                "dms:StartReplicationTask",
+                                "dms:StartReplicationTaskAssessmentRun",
+                                "dms:DescribeApplicableIndividualAssessments",
+                                "dms:DescribeReplicationTaskAssessmentRuns",
+                                "dms:StopReplicationTask",
+                                "dms:DescribeReplicationInstanceTaskLogs",
+                                "dms:DescribeTableStatistics",
+                                "dms:StartReplicationTaskAssessment",
+                                "dms:DescribeReplicationTaskAssessmentResults"
+                            ],
+                            "Resource": [
+                                "arn:aws:dms:*:${account}:rep:*",
+                                "arn:aws:dms:*:${account}:task:*"
+                            ],
+                            "Condition": {
+                                "StringEquals": {
+                                    "${key}": "${value}"
+                                }
+                            },
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "kms:ListAliases",
+                                "kms:DescribeKey"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "iam:GetRole"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "ec2:DescribeVpcs",
+                                "ec2:DescribeInternetGateways",
+                                "ec2:DescribeAvailabilityZones",
+                                "ec2:DescribeSubnets",
+                                "ec2:DescribeSecurityGroups"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        },
+                        {
+                            "Action": [
+                                "cloudwatch:Get*",
+                                "cloudwatch:List*"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        }
+                    ]
+                }
+              -
+                key: !Sub 'aws:ResourceTag/${TagKey}'
+                value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+                account: !Ref 'AWS::AccountId'
