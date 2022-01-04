@@ -6,7 +6,7 @@ Description: Resources for IAM Access Analyzer resources to generate IAM Policie
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/iam-access-analyzer/template.yaml
   Version: "1.1.0"
-  RecommendedStackName: $ENV-access-analyzer-generator
+  RecommendedStackName: access-analyzer-policy-generator-resources-$ENV
   ChangeLog:
     "1.1.0":
       - add KMS decryption privs to policy
