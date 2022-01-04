@@ -20,6 +20,7 @@ Parameters:
   VersionParam:
     Description: CIT template version
     Type: String
+    Default: "1.1.0"
 
   ContactEmailParam:
     Description: CIT contact email tag value version
@@ -33,7 +34,7 @@ Parameters:
 
   EnvironmentParam:
     Description: Environment for the resources this template creates.
-    Default: dev
+    Default: prod
     Type: String
     AllowedValues:
       - dev
