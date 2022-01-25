@@ -23,6 +23,16 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  SQSAccess:
+    Description: Access to SQS Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
+  ECSAccess:
+    Description: Access to ECS Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketName:
     Description: S3 bucket name to grant access to (if applicable)
     Type: String
@@ -31,6 +41,8 @@ Conditions:
   CreateS3: !Equals [ !Ref S3Access, 'yes' ]
   CreateEC2: !Equals [ !Ref EC2Access, 'yes' ]
   CreateDMS: !Equals [ !Ref DMSAccess, 'yes' ]
+  CreateSQS: !Equals [ !Ref SQSAccess, 'yes' ]
+  CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -257,5 +269,84 @@ Resources:
             key: !Sub 'aws:ResourceTag/${TagKey}'
             value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
             account: !Ref 'AWS::AccountId'
+      Roles:
+        - !Ref IAMRole
+
+  SQSPolicy:
+    Condition: CreateSQS
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'sqs', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "sqs:*"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  ECSPolicy:
+    Condition: CreateECS
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'ecs', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecs:List*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecs:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "cloudwatch:GetMetricStatistics"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": [
+                            "ecs:TagResource",
+                            "ecs:UntagResource"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
       Roles:
         - !Ref IAMRole
