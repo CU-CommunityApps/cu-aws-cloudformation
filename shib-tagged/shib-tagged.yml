@@ -33,6 +33,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  GlueAccess:
+    Description: Access to Glue Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketName:
     Description: S3 bucket name to grant access to (if applicable)
     Type: String
@@ -43,6 +48,7 @@ Conditions:
   CreateDMS: !Equals [ !Ref DMSAccess, 'yes' ]
   CreateSQS: !Equals [ !Ref SQSAccess, 'yes' ]
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
+  CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -340,6 +346,55 @@ Resources:
                         "Action": [
                             "ecs:TagResource",
                             "ecs:UntagResource"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  GluePolicy:
+    Condition: CreateGlue
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'glue', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "glue:*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "glue:CreateConnection", 
+                            "glue:UpdateConnection", 
+                            "glue:GetConnection",
+                            "glue:DeleteConnection"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": [
+                            "glue:TagResource",
+                            "glue:UntagResource"
                         ],
                         "Resource": "*"
                     }
