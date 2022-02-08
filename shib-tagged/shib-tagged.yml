@@ -226,7 +226,8 @@ Resources:
                         ],
                         "Resource": [
                             "arn:aws:dms:*:${account}:rep:*",
-                            "arn:aws:dms:*:${account}:task:*"
+                            "arn:aws:dms:*:${account}:task:*",
+                            "arn:aws:dms:*:${account}:endpoint:*"
                         ],
                         "Condition": {
                             "StringEquals": {
