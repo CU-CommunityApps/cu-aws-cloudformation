@@ -38,8 +38,8 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
-  BucketName:
-    Description: S3 bucket name to grant access to (if applicable)
+  BucketNamePrefix:
+    Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
 
 Conditions:
@@ -123,8 +123,8 @@ Resources:
             Effect: Allow
             Action: 's3:*'
             Resource:
-              - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}'
-              - !Sub 'arn:${AWS::Partition}:s3:::${BucketName}/*'
+              - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*'
+              - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
           -
             Effect: Allow
             Action: 's3:ListAllMyBuckets'
