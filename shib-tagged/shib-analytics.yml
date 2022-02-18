@@ -263,6 +263,6 @@ Resources:
               -
                 key: !Sub 'aws:ResourceTag/${TagKey}'
                 value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
-                key2: !Sub 'aws:aws:RequestTag/${TagKey}'
+                key2: !Sub 'aws:RequestTag/${TagKey}'
                 value2: !Ref TagValue
                 account: !Ref 'AWS::AccountId'
