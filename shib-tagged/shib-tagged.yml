@@ -356,7 +356,7 @@ Resources:
                         "Resource": "*"
                     },
                     {
-                        "Sid": "DenyECSWithoutTags"
+                        "Sid": "DenyECSWithoutTags",
                         "Effect": "Deny",
                         "Action": [
                             "ecs:Create*",
@@ -395,7 +395,7 @@ Resources:
           -
             key: !Sub 'aws:ResourceTag/${TagKey}'
             value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
-            key2: !Sub 'aws:aws:RequestTag/${TagKey}'
+            key2: !Sub 'aws:RequestTag/${TagKey}'
             value2: !Ref TagValue
       Roles:
         - !Ref IAMRole
@@ -432,14 +432,6 @@ Resources:
                                 "${key}": "${value}"
                             }
                         }
-                    },
-                    {
-                        "Effect": "Deny",
-                        "Action": [
-                            "glue:TagResource",
-                            "glue:UntagResource"
-                        ],
-                        "Resource": "*"
                     }
                 ]
             }
