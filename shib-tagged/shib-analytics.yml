@@ -168,12 +168,28 @@ Resources:
                             "Effect": "Allow"
                         },
                         {
+                            "Sid": "DenyDMSWithoutTags",
+                            "Effect": "Deny",
                             "Action": [
-                                "dms:RemoveTagsFromResource",
+                                "dms:Create*",
                                 "dms:AddTagsToResource"
                             ],
                             "Resource": "*",
-                            "Effect": "Deny"
+                            "Condition": {
+                                "ForAllValues:StringNotLike": {
+                                    "${key2}": [
+                                        "${value2}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "Action": [
+                                "dms:Create*",
+                                "dms:AddTagsToResource"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
                         },
                         {
                             "Action": [
@@ -188,12 +204,18 @@ Resources:
                                 "dms:DescribeReplicationInstanceTaskLogs",
                                 "dms:DescribeTableStatistics",
                                 "dms:StartReplicationTaskAssessment",
-                                "dms:DescribeReplicationTaskAssessmentResults"
+                                "dms:DescribeReplicationTaskAssessmentResults",
+                                "dms:DeleteConnection",
+                                "dms:DeleteEndpoint",
+                                "dms:DeleteReplicationInstance",
+                                "dms:DeleteReplicationTask",
+                                "dms:ModifyReplicationInstance",
+                                "dms:ModifyReplicationTask",
+                                "dms:ReloadTables",
+                                "dms:RemoveTagsFromResource"
                             ],
                             "Resource": [
-                                "arn:aws:dms:*:${account}:rep:*",
-                                "arn:aws:dms:*:${account}:task:*",
-                                "arn:aws:dms:*:${account}:endpoint:*"
+                                "arn:aws:dms:*:${account}:*"
                             ],
                             "Condition": {
                                 "StringEquals": {
@@ -241,4 +263,6 @@ Resources:
               -
                 key: !Sub 'aws:ResourceTag/${TagKey}'
                 value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+                key2: !Sub 'aws:aws:RequestTag/${TagKey}'
+                value2: !Ref TagValue
                 account: !Ref 'AWS::AccountId'
