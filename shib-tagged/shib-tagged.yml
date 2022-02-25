@@ -268,7 +268,9 @@ Resources:
                     },
                     {
                         "Action": [
-                            "iam:GetRole"
+                            "iam:PassRole",
+                            "iam:Get*",
+                            "iam:List*"
                         ],
                         "Resource": "*",
                         "Effect": "Allow"
