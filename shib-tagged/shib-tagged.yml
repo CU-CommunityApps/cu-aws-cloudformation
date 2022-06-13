@@ -14,7 +14,12 @@ Parameters:
     Type: String
     AllowedValues: ['yes', 'no']
   EC2Access:
-    Description: Access to EC2 Resources?
+    Description: Limited Access to EC2 Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
+  EC2FullAccess:
+    Description: Full Access to EC2 Resources?
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
@@ -38,6 +43,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  SageMakerFullAccess:
+    Description: Access to SageMaker Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
@@ -45,10 +55,12 @@ Parameters:
 Conditions:
   CreateS3: !Equals [ !Ref S3Access, 'yes' ]
   CreateEC2: !Equals [ !Ref EC2Access, 'yes' ]
+  CreateEC2Full: !Equals [ !Ref EC2FullAccess, 'yes' ]
   CreateDMS: !Equals [ !Ref DMSAccess, 'yes' ]
   CreateSQS: !Equals [ !Ref SQSAccess, 'yes' ]
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
+  CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -180,6 +192,118 @@ Resources:
           -
             key: !Sub 'aws:ResourceTag/${TagKey}'
             value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  EC2FullPolicy:
+    Condition: CreateEC2Full
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'ec2-full', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:DescribeInstances"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Sid": "DenyEC2WithoutTags",
+                        "Effect": "Deny",
+                        "Action": [
+                            "ec2:Create*",
+                            "ec2:AddTagsToResource"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": [
+                                    "${value2}"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
+      Roles:
+        - !Ref IAMRole
+
+  SageMakerFullPolicy:
+    Condition: CreateSageMakerFull
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'sagemaker-full', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "sagemaker:Describe*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "sagemaker:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Sid": "DenySageMakerWithoutTags",
+                        "Effect": "Deny",
+                        "Action": [
+                            "sagemaker:Create*",
+                            "sagemaker:AddTags"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": [
+                                    "${value2}"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
       Roles:
         - !Ref IAMRole
 
