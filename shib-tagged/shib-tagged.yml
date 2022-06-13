@@ -44,7 +44,7 @@ Parameters:
     Type: String
     AllowedValues: ['yes', 'no']
   SageMakerFullAccess:
-    Description: Access to SageMaker Resources?
+    Description: Full Access to SageMaker Resources?
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
