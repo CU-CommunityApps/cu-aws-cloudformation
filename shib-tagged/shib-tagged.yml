@@ -209,51 +209,14 @@ Resources:
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "ec2:DescribeInstances"
+                            "cloudwatch:*",
+                            "ec2:*",
+                            "compute-optimizer:GetEnrollmentStatus",
+                            "elasticloadbalancing:*",
+                            "ebs:*",
+                            "autoscaling:*",
+                            "iam:ListInstanceProfiles"
                         ],
-                        "Resource": "*"
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ec2:*"
-                        ],
-                        "Resource": "*",
-                        "Condition": {
-                            "StringEquals": {
-                                "${key}": "${value}"
-                            }
-                        }
-                    },
-                    {
-                        "Sid": "DenyEC2WithoutTags",
-                        "Effect": "Deny",
-                        "Action": [
-                            "ec2:Create*",
-                            "ec2:AddTagsToResource"
-                        ],
-                        "Resource": "*",
-                        "Condition": {
-                            "ForAllValues:StringNotLike": {
-                                "${key2}": [
-                                    "${value2}"
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": "elasticloadbalancing:*",
-                        "Resource": "*"
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": "cloudwatch:*",
-                        "Resource": "*"
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": "autoscaling:*",
                         "Resource": "*"
                     },
                     {
@@ -270,6 +233,19 @@ Resources:
                                     "spotfleet.amazonaws.com",
                                     "transitgateway.amazonaws.com"
                                 ]
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": "ec2:*",
+                        "Resource": "arn:aws:ec2:*:*:instance/*",
+                        "Condition": {
+                            "ForAllValues:StringNotEquals": {
+                                "aws:ResourceTag/nytech:project": "${aws:PrincipalTag/nytech:project}"
+                            },
+                            "ForAllValues:StringNotLike": {
+                                "aws:RequestTag/nytech:project": "winnow"
                             }
                         }
                     }
