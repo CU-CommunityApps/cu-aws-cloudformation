@@ -242,10 +242,10 @@ Resources:
                         "Resource": "arn:aws:ec2:*:*:instance/*",
                         "Condition": {
                             "ForAllValues:StringNotEquals": {
-                                "aws:ResourceTag/nytech:project": "${aws:PrincipalTag/nytech:project}"
+                                "${key}": "${value}"
                             },
                             "ForAllValues:StringNotLike": {
-                                "aws:RequestTag/nytech:project": "winnow"
+                                "${key2}": "${value2}"
                             }
                         }
                     }
@@ -273,9 +273,19 @@ Resources:
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "sagemaker:Describe*"
+                            "iam:PassRole",
+                            "iam:CreateServiceLinkedRole",
+                            "sagemaker:Create*",
+                            "sagemaker:List*",
+                            "kms:ListAliases",
+                            "iam:ListRoles"
                         ],
                         "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": "s3:CreateBucket",
+                        "Resource": "arn:aws:s3:::sagemaker-studio-${account}-*"
                     },
                     {
                         "Effect": "Allow",
@@ -293,8 +303,39 @@ Resources:
                         "Sid": "DenySageMakerWithoutTags",
                         "Effect": "Deny",
                         "Action": [
-                            "sagemaker:Create*",
-                            "sagemaker:AddTags"
+                            "sagemaker:CreateAction",
+                            "sagemaker:CreateAlgorithm",
+                            "sagemaker:CreateEdgePackagingJob",
+                            "sagemaker:CreateEndpoint",
+                            "sagemaker:CreateEndpointConfig",
+                            "sagemaker:CreateExperiment",
+                            "sagemaker:CreateFeatureGroup",
+                            "sagemaker:CreateFlowDefinition",
+                            "sagemaker:CreateHumanTaskUi",
+                            "sagemaker:CreateHyperParameterTuningJob",
+                            "sagemaker:CreateImage",
+                            "sagemaker:CreateImageVersion",
+                            "sagemaker:CreateInferenceRecommendationsJob",
+                            "sagemaker:CreateLabelingJob",
+                            "sagemaker:CreateLineageGroupPolicy",
+                            "sagemaker:CreateModel",
+                            "sagemaker:CreateModelBiasJobDefinition",
+                            "sagemaker:CreateModelExplainabilityJobDefinition",
+                            "sagemaker:CreateModelPackage",
+                            "sagemaker:CreateModelPackageGroup",
+                            "sagemaker:CreateModelQualityJobDefinition",
+                            "sagemaker:CreateMonitoringSchedule",
+                            "sagemaker:CreateNotebookInstance",
+                            "sagemaker:CreateNotebookInstanceLifecycleConfig",
+                            "sagemaker:CreatePipeline",
+                            "sagemaker:CreateProcessingJob",
+                            "sagemaker:CreateProject",
+                            "sagemaker:CreateStudioLifecycleConfig",
+                            "sagemaker:CreateTrainingJob",
+                            "sagemaker:CreateTransformJob",
+                            "sagemaker:CreateTrial",
+                            "sagemaker:CreateTrialComponent",
+                            "sagemaker:CreateUserProfile"
                         ],
                         "Resource": "*",
                         "Condition": {
@@ -312,6 +353,7 @@ Resources:
             value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
             key2: !Sub 'aws:RequestTag/${TagKey}'
             value2: !Ref TagValue
+            account: !Ref 'AWS::AccountId'
       Roles:
         - !Ref IAMRole
 
