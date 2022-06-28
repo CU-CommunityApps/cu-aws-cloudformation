@@ -48,8 +48,21 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  CloudformationAccess:
+    Description: Access to Cloudformation Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
+  LambdaAccess:
+    Description: Access to Lambda Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
+    Type: String
+  LambdaNamePrefix:
+    Description: Lambda function name prefix to grant access to (if applicable)
     Type: String
 
 Conditions:
@@ -61,6 +74,8 @@ Conditions:
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
+  CreateCloudformation: !Equals [ !Ref CloudformationAccess, 'yes' ]
+  CreateLambda: !Equals [ !Ref LambdaAccess, 'yes' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -486,6 +501,77 @@ Resources:
             account: !Ref 'AWS::AccountId'
       Roles:
         - !Ref IAMRole
+
+  CloudformationPolicy:
+    Condition: CreateCloudformation
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'cloudformation', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "cloudformation:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "cloudformation:ListStacks"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  LambdaPolicy:
+    Condition: CreateLambda
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'lambda', !Ref TagValue ] ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action: 'lambda:*'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${LambdaNamePrefix}*'
+          -
+            Effect: Allow
+            Action: 
+              - 'lambda:ListFunctions'
+              - 'lambda:GetAccountSettings'
+            Resource: '*'
+          - 
+            Effect: Allow
+            Action: 'iam:CreatePolicy'
+            Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/*AWSLambdaBasicExecutionRole-*'
+          - 
+            Effect: Allow
+            Action: 
+              - 'iam:CreateRole'
+              - 'iam:AttachRolePolicy'
+              - 'iam:PassRole'
+            Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/*'
+      Roles:
+        - !Ref IAMRole       
 
   SQSPolicy:
     Condition: CreateSQS
