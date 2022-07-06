@@ -58,6 +58,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  SecretsManagerAccess:
+    Description: Access to Secrets Manager Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
@@ -76,6 +81,7 @@ Conditions:
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
   CreateCloudformation: !Equals [ !Ref CloudformationAccess, 'yes' ]
   CreateLambda: !Equals [ !Ref LambdaAccess, 'yes' ]
+  CreateSecretsManager: !Equals [ !Ref SecretsManagerAccess, 'yes' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -259,6 +265,56 @@ Resources:
                             "ForAllValues:StringNotEquals": {
                                 "${key}": "${value}"
                             },
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": "${value2}"
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
+      Roles:
+        - !Ref IAMRole
+
+  SecretsManagerPolicy:
+    Condition: CreateSecretsManager
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'secrets', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "secretsmanager:ListSecrets"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "secretsmanager:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": "secretsmanager:CreateSecret",
+                        "Resource": "*",
+                        "Condition": {
                             "ForAllValues:StringNotLike": {
                                 "${key2}": "${value2}"
                             }
