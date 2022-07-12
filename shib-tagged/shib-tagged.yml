@@ -63,6 +63,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  KMSAccess:
+    Description: Access to Key Management Services?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
@@ -78,6 +83,7 @@ Conditions:
   CreateSQS: !Equals [ !Ref SQSAccess, 'yes' ]
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
+  CreateKMS: !Equals [ !Ref KMSAccess, 'yes' ]
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
   CreateCloudformation: !Equals [ !Ref CloudformationAccess, 'yes' ]
   CreateLambda: !Equals [ !Ref LambdaAccess, 'yes' ]
@@ -265,6 +271,56 @@ Resources:
                             "ForAllValues:StringNotEquals": {
                                 "${key}": "${value}"
                             },
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": "${value2}"
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
+      Roles:
+        - !Ref IAMRole
+
+  KMSPolicy:
+    Condition: CreateKMS
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'kms', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "kms:List*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "kms:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": "kms:Create*",
+                        "Resource": "*",
+                        "Condition": {
                             "ForAllValues:StringNotLike": {
                                 "${key2}": "${value2}"
                             }
