@@ -300,7 +300,9 @@ Resources:
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "kms:List*"
+                            "kms:List*",
+                            "kms:DescribeKey",
+                            "kms:DescribeCustomKeyStores"
                         ],
                         "Resource": "*"
                     },
