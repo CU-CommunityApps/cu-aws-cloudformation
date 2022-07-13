@@ -73,6 +73,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  CloudShellAccess:
+    Description: Access to Cloud Shell?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
@@ -93,6 +98,7 @@ Conditions:
   CreateECR: !Equals [ !Ref ECRAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
   CreateKMS: !Equals [ !Ref KMSAccess, 'yes' ]
+  CreateCloudShell: !Equals [ !Ref CloudShellAccess, 'yes' ]
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
   CreateCloudformation: !Equals [ !Ref CloudformationAccess, 'yes' ]
   CreateLambda: !Equals [ !Ref LambdaAccess, 'yes' ]
@@ -157,6 +163,21 @@ Resources:
               - 'resource-groups:Get*'
               - 'resource-groups:SearchResources'
             Resource: !GetAtt TagBasedResourceGroup.Arn
+      Roles:
+        - !Ref IAMRole
+
+  CloudShellPolicy:
+    Condition: CreateCloudShell
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'cloudshell', !Ref TagValue ] ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action: 'cloudshell:*'
+            Resource: '*'
       Roles:
         - !Ref IAMRole
 
