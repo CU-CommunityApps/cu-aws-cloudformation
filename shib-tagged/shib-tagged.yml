@@ -202,7 +202,8 @@ Resources:
                         "Effect": "Allow",
                         "Action": [
                             "ecr:List*",
-                            "ecr:Describe*"
+                            "ecr:Describe*",
+                            "ecr:Create*"
                         ],
                         "Resource": "*"
                     },
@@ -215,16 +216,6 @@ Resources:
                         "Condition": {
                             "StringEquals": {
                                 "${key}": "${value}"
-                            }
-                        }
-                    },
-                    {
-                        "Effect": "Deny",
-                        "Action": "ecr:Create*",
-                        "Resource": "*",
-                        "Condition": {
-                            "ForAllValues:StringNotLike": {
-                                "${key2}": "${value2}"
                             }
                         }
                     }
