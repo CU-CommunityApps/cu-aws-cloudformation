@@ -23,6 +23,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  ECRAccess:
+    Description: Access to ECR Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   DMSAccess:
     Description: Access to DMS Resources?
     Default: 'no'
@@ -35,11 +40,6 @@ Parameters:
     AllowedValues: ['yes', 'no']
   ECSAccess:
     Description: Access to ECS Resources?
-    Default: 'no'
-    Type: String
-    AllowedValues: ['yes', 'no']
-  ECRAccess:
-    Description: Access to ECR Resources?
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
@@ -76,6 +76,9 @@ Parameters:
   BucketNamePrefix:
     Description: S3 bucket name prefix to grant access to (if applicable)
     Type: String
+  BucketNamePrefix2:
+    Description: S3 bucket name prefix to grant access to (if applicable)
+    Type: String
   LambdaNamePrefix:
     Description: Lambda function name prefix to grant access to (if applicable)
     Type: String
@@ -94,6 +97,7 @@ Conditions:
   CreateCloudformation: !Equals [ !Ref CloudformationAccess, 'yes' ]
   CreateLambda: !Equals [ !Ref LambdaAccess, 'yes' ]
   CreateSecretsManager: !Equals [ !Ref SecretsManagerAccess, 'yes' ]
+  NoBucket2: !Equals [ !Ref BucketNamePrefix2, '' ]
 
 Resources:
   TagBasedResourceGroup:
@@ -170,6 +174,8 @@ Resources:
             Resource:
               - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*'
               - !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix}*/*'
+              - !If [ NoBucket2, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix2}*' ]
+              - !If [ NoBucket2, !Ref 'AWS::NoValue', !Sub 'arn:${AWS::Partition}:s3:::${BucketNamePrefix2}*/*' ]
           -
             Effect: Allow
             Action: 's3:ListAllMyBuckets'
@@ -178,6 +184,57 @@ Resources:
             Effect: Deny
             Action: 's3:PutBucketTagging'
             Resource: '*'
+      Roles:
+        - !Ref IAMRole
+
+  ECRPolicy:
+    Condition: CreateECR
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'ecr', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:List*",
+                            "ecr:Describe*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": "ecr:Create*",
+                        "Resource": "*",
+                        "Condition": {
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": "${value2}"
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
       Roles:
         - !Ref IAMRole
 
@@ -377,57 +434,6 @@ Resources:
                     {
                         "Effect": "Deny",
                         "Action": "secretsmanager:CreateSecret",
-                        "Resource": "*",
-                        "Condition": {
-                            "ForAllValues:StringNotLike": {
-                                "${key2}": "${value2}"
-                            }
-                        }
-                    }
-                ]
-            }
-          -
-            key: !Sub 'aws:ResourceTag/${TagKey}'
-            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
-            key2: !Sub 'aws:RequestTag/${TagKey}'
-            value2: !Ref TagValue
-      Roles:
-        - !Ref IAMRole
-
-  ECRPolicy:
-    Condition: CreateECR
-    Type: 'AWS::IAM::Policy'
-    Properties:
-      PolicyName: !Join [ '-', [ 'ecr', !Ref TagValue ] ]
-      PolicyDocument:
-        !Sub 
-          - |
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ecr:List*",
-                            "ecr:Describe*"
-                        ],
-                        "Resource": "*"
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ecr:*"
-                        ],
-                        "Resource": "*",
-                        "Condition": {
-                            "StringEquals": {
-                                "${key}": "${value}"
-                            }
-                        }
-                    },
-                    {
-                        "Effect": "Deny",
-                        "Action": "ecr:Create*",
                         "Resource": "*",
                         "Condition": {
                             "ForAllValues:StringNotLike": {
@@ -724,11 +730,14 @@ Resources:
             Action: 'lambda:*'
             Resource:
               - !Sub 'arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${LambdaNamePrefix}*'
+              - !Sub 'arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:layer:${LambdaNamePrefix}*'
           -
             Effect: Allow
             Action: 
               - 'lambda:ListFunctions'
               - 'lambda:GetAccountSettings'
+              - 'lambda:ListLayerVersions'
+              - 'lambda:ListLayers'
             Resource: '*'
           - 
             Effect: Allow
