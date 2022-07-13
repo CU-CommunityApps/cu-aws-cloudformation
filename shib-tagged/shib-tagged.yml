@@ -38,6 +38,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  ECRAccess:
+    Description: Access to ECR Resources?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   GlueAccess:
     Description: Access to Glue Resources?
     Default: 'no'
@@ -82,6 +87,7 @@ Conditions:
   CreateDMS: !Equals [ !Ref DMSAccess, 'yes' ]
   CreateSQS: !Equals [ !Ref SQSAccess, 'yes' ]
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
+  CreateECR: !Equals [ !Ref ECRAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
   CreateKMS: !Equals [ !Ref KMSAccess, 'yes' ]
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
@@ -371,6 +377,57 @@ Resources:
                     {
                         "Effect": "Deny",
                         "Action": "secretsmanager:CreateSecret",
+                        "Resource": "*",
+                        "Condition": {
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": "${value2}"
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+            key2: !Sub 'aws:RequestTag/${TagKey}'
+            value2: !Ref TagValue
+      Roles:
+        - !Ref IAMRole
+
+  ECRPolicy:
+    Condition: CreateECR
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'ecr', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:List*",
+                            "ecr:Describe*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Deny",
+                        "Action": "ecr:Create*",
                         "Resource": "*",
                         "Condition": {
                             "ForAllValues:StringNotLike": {
