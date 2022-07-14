@@ -750,6 +750,7 @@ Resources:
               - 'lambda:GetAccountSettings'
               - 'lambda:ListLayerVersions'
               - 'lambda:ListLayers'
+              - 'lambda:GetLayerVersion'
             Resource: '*'
           - 
             Effect: Allow
