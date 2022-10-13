@@ -12,3 +12,4 @@ This repo is a collection of standard, official templates used by the Cornell CI
 - [sns-teams-relay](sns-teams-relay) creates a Lambda function to relay SNS messages to Microsoft Teams
 - [standard-vpc](standard-vpc) creates a Cornell Standard VPC
 - [template-template](template-template) -- a standard starting point for new CloudFormation templates, including a helpful script
+- [vpc-endpoints](vpc-endpoints) -- creates VPC endpoints for commonly used AWS services

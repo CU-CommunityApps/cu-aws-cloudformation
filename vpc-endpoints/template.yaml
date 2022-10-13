@@ -1,0 +1,125 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description:  Creates an S3 (gateway) endpoint and an SES (SMTP) endpoint in a VPC.
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/vpc-endpoints/template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: $ENV-vpc-endpoints
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+
+  VPCParam:
+    Description: In which VPC should the endpoints be placed?
+    Type: AWS::EC2::VPC::Id
+
+  RouteTableIdsParam:
+    Description: List of route table IDs that should be updated for the S3 endpoint
+    Type: CommaDelimitedList
+
+  SMTPEndpointSubnetsParam:
+    Description: Which subnets should house SMTP endpoints? See https://docs.aws.amazon.com/ses/latest/dg/send-email-set-up-vpc-endpoints.html for exclusions.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  VersionParam:
+    Description: CIT template version
+    Type: String
+    
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+    
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/vpc-endpoints/template.yaml
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: prod
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: TBD
+    Type: String
+
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  S3Endpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: Delete # or Retain
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcId: !Ref VPCParam
+      RouteTableIds: !Ref RouteTableIdsParam
+      VpcEndpointType: Gateway
+
+  SMTPEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DeletionPolicy: Delete # or Retain
+    Properties: 
+      PrivateDnsEnabled: true
+      SecurityGroupIds: 
+        - !Ref SMTPEndpointSecurityGroup
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.email-smtp"
+      SubnetIds: !Ref SMTPEndpointSubnetsParam
+      VpcEndpointType: Interface
+      VpcId: !Ref VPCParam
+
+  SMTPEndpointSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: Delete # or Retain
+    Properties:
+      GroupDescription: "Security group to allow access to email-smtp VPC Endpoint"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "tcp"
+          FromPort: "25"
+          ToPort: "25"
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "tcp"
+          FromPort: "467"
+          ToPort: "467"
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "tcp"
+          FromPort: "587"
+          ToPort: "587"
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "tcp"
+          FromPort: "2465"
+          ToPort: "2465"
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "tcp"
+          FromPort: "2587"
+          ToPort: "2587"
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+      VpcId: !Ref VPCParam
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: Security group to allow access to email-smtp VPC Endpoint
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
