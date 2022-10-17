@@ -1,3 +1,12 @@
+###############################################################################
+# Take Heed!
+# 
+# The NACL created by this template can support a VPC with CIDR block(s) in the
+# 100.64.0.0/10 range. If this is your situation, you will need to request
+# a NACL rule quota increase since the number of outbound rules is greater than
+# the default 20 rule quota before using this template. See
+# https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html#vpc-limits-nacls
+###############################################################################
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
@@ -5,9 +14,13 @@ Description: "Create a standard baseline Network ACL. Source: https://github.com
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template/template.yaml
-  Version: "2.1.0"
-  RecommendedStackName: $ENV-recommended-stack-name
+  Version: "2.2.0"
+  RecommendedStackName: cornell-baseline-nacl
   ChangeLog:
+    "2.2.0":
+      - improve 'Metadata.RecommendedStackName'
+      - add option for including 100.64.0.0/10 rules in the NACL
+      - add 'DeletionPolicy' to prefix list resources
     "2.1.0":
       - add prefix list resources
       - add standard 'Metadata' section to this template
@@ -60,10 +73,24 @@ Parameters:
     Default: https://confluence.cornell.edu/x/rFL_Ew
     Type: String
 
+  Include100Param:
+    Description: Do the target VPCs have any CIDR blocks in 100.64.0.0/10?
+    Default: false
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+Conditions:
+  Include100: !Equals 
+    - !Ref Include100Param
+    - true
+
 Resources:
 
   KerberosPrefixList:
     Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
     Properties:
       AddressFamily: IPv4
       Entries:
@@ -89,6 +116,7 @@ Resources:
 
   DirectoryPrefixList:
     Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
     Properties:
       AddressFamily: IPv4
       Entries:
@@ -118,6 +146,7 @@ Resources:
 
   CampusPublicPrivateIpsPrefixList:
     Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
     Properties:
       AddressFamily: IPv4
       Entries:
@@ -336,6 +365,21 @@ Resources:
       Protocol: -1
       RuleAction : allow
       RuleNumber : 1300
+
+  # This any subnet in the VPC to accept traffic
+  # from any subnets in the 100.64.0.0/10 that happen to be in the VPC.
+  # Since the 100.64.0.0/10 CIDR block isn't routable, any traffic from
+  # a 100.64.0.0/10 CIDR block is local to the VPC.
+  NetworkACLRuleIn1400:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Retain
+    Condition: Include100
+    Properties:
+      CidrBlock: 100.64.0.0/10
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1400
 
   NetworkACLRuleOut0100:
     Type: AWS::EC2::NetworkAclEntry
@@ -583,3 +627,19 @@ Resources:
       Protocol: -1
       RuleAction : allow
       RuleNumber : 1700
+
+  # This allows traffic in any subnet in the VPC
+  # to reach any subnets in the 100.64.0.0/10 that happen to be in the VPC.
+  # Since the 100.64.0.0/10 CIDR block isn't routable, any traffic to
+  # a 100.64.0.0/10 CIDR block is local to the VPC.
+  NetworkACLRuleOut1800:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Retain
+    Condition: Include100
+    Properties:
+      Egress: true
+      CidrBlock: 100.64.0.0/10
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1800
