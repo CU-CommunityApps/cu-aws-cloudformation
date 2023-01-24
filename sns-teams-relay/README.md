@@ -9,6 +9,7 @@ The Lambda attempts to provide decent formatting for these specific types of AWS
 - `CodePipeline Pipeline Execution State Change`
 - `CodePipeline Action Execution State Change`
 - CodePipeline Manual Approval notifications
+- CloudWatch Alarm notifications (Alarm, OK, Insufficient Data)
 
 See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sns-teams-relay) for a Terraform module to deploy similar functionality with Terraform.
 
@@ -20,6 +21,13 @@ See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sn
 - [example-notifications](example-notifications/) -- Examples of SNS and message content
 
 ## Change Log
+
+### v2.1.1
+      - add support for handling CloudWatch alarms messages
+      - add `AlarmSNSTopicsNormal` parameter
+      - add `AlarmSNSTopicsAlert` parameter
+      - add `StrftimeFormatParam` parameter
+      - jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
 
 ### v2.0.0
 - apply some Python style fixes

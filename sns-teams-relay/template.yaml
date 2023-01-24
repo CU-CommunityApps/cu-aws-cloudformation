@@ -5,9 +5,15 @@ Description: Resources to relay SNS messages to a Microsoft Teams webhook.
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
-  Version: "2.0.0"
+  Version: "2.1.0"
   RecommendedStackName: sns-teams-relay-$ENV
   ChangeLog:
+    "2.1.1":
+      - add support for handling CloudWatch alarms messages
+      - add `AlarmSNSTopicsNormal` parameter
+      - add `AlarmSNSTopicsAlert` parameter
+      - add `StrftimeFormatParam` parameter
+      - jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
     "2.0.0":
       - Add support for two different webhook URLs: WEBHOOK_URL_NORMAL, WEBHOOK_URL_ALERT
     "1.0.0":
@@ -51,6 +57,21 @@ Parameters:
     Description: URL for your Teams webhook for failure of any type
     Type: String
 
+  StrftimeFormatParam:
+    Description: Python strftime format string to use to convert to readable timestamps.
+    Type: String
+    Default: "%Y-%m-%d %H:%M UTC"
+
+  AlarmSNSTopicsNormal:
+    Description: Comman-separated strinof SNS ARNs. All alarm notifications coming from these SNS topics will be sent to the normal webhook.
+    Default: ""
+    Type: String
+
+  AlarmSNSTopicsAlert:
+    Description: Comman-separated strinof SNS ARNs. All alarm notifications coming from these SNS topics will be sent to the alert webhook.
+    Default: ""
+    Type: String
+
 Mappings: {}
 
 Conditions: {} 
@@ -69,6 +90,9 @@ Resources:
         Variables:
           WEBHOOK_URL_NORMAL: !Ref TeamsWebhookNormalURLParam
           WEBHOOK_URL_ALERT: !Ref TeamsWebhookAlertURLParam
+          ALARM_SNS_TOPICS_NORMAL: !Ref AlarmSNSTopicsNormal
+          ALARM_SNS_TOPICS_ALERT: !Ref AlarmSNSTopicsAlert
+          STRFTIME_FORMAT: !Ref StrftimeFormatParam
       # FileSystemConfigs: 
       #   - FileSystemConfig
       FunctionName: !Sub "sns-teams-relay-${EnvironmentParam}"
