@@ -5,7 +5,7 @@ Description: Resources to relay SNS messages to a Microsoft Teams webhook.
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
-  Version: "2.1.0"
+  Version: "2.1.1"
   RecommendedStackName: sns-teams-relay-$ENV
   ChangeLog:
     "2.1.1":
