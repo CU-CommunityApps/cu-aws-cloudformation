@@ -163,7 +163,8 @@ def handle_unknown_event(event, context):
         "@context": "http://schema.org/extensions",
         "summary": summary,
         "themeColor": default_color,
-        "text": f"Message: [{sns_message}]<br />Relayed by {context.invoked_function_arn}",
+        # The \n\n<br /> tries to ensure that the "Relayed" message starts on a new line.
+        "text": f"{sns_message}\n\n<br />Relayed by {context.invoked_function_arn}",
         "title": summary,
         "potentialAction": []
     }, webhook_url_normal

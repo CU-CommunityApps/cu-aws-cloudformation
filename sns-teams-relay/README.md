@@ -22,12 +22,15 @@ See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sn
 
 ## Change Log
 
+### v2.2.0
+- minor change to generic SNS message display format to allow markdown-formatted message payloads to display better in Teams
+
 ### v2.1.1
-      - add support for handling CloudWatch alarms messages
-      - add `AlarmSNSTopicsNormal` parameter
-      - add `AlarmSNSTopicsAlert` parameter
-      - add `StrftimeFormatParam` parameter
-      - jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
+- add support for handling CloudWatch alarms messages
+- add `AlarmSNSTopicsNormal` parameter
+- add `AlarmSNSTopicsAlert` parameter
+- add `StrftimeFormatParam` parameter
+- jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
 
 ### v2.0.0
 - apply some Python style fixes
