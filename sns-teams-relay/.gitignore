@@ -140,3 +140,4 @@ cython_debug/
 # Local customizations
 template-export.yml
 response.out.json
+dont-publish.sh
