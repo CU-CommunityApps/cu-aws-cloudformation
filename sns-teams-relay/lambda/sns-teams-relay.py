@@ -15,11 +15,21 @@ webhook_url_normal = os.environ['WEBHOOK_URL_NORMAL']
 webhook_url_alert = os.environ['WEBHOOK_URL_ALERT']
 strftime_format = os.environ.get('STRFTIME_FORMAT', '%Y-%m-%d %H:%M UTC')
 
+# If an alarm comes from these topics, use the "normal" teams webhook.
 alarm_sns_topics_normal = os.environ.get('ALARM_SNS_TOPICS_NORMAL', None)
 alarm_sns_topics_normal = [] if not alarm_sns_topics_normal else alarm_sns_topics_normal.split(',')
 
+# If an alarm comes from these topics, use the "alert" teams webhook.
 alarm_sns_topics_alert = os.environ.get('ALARM_SNS_TOPICS_ALERT', None)
 alarm_sns_topics_alert = [] if not alarm_sns_topics_alert else alarm_sns_topics_alert.split(',')
+
+# If an unclassified message comes from these topics, use the "normal" teams webhook.
+generic_sns_topics_normal = os.environ.get('GENERIC_SNS_TOPICS_NORMAL', None)
+generic_sns_topics_normal = [] if not generic_sns_topics_normal else generic_sns_topics_normal.split(',')
+
+# If an unclassified message comes from these topics, use the "alert" teams webhook.
+generic_sns_topics_alert = os.environ.get('GENERIC_SNS_TOPICS_ALERT', None)
+generic_sns_topics_alert = [] if not generic_sns_topics_alert else generic_sns_topics_alert.split(',')
 
 # Contextual colors
 info_color = '1919ff'
@@ -99,7 +109,7 @@ def handler(event, context):
     elif msg_type == "CodePipeline Action Execution State Change":
         msg, url = handle_codepipeline_action_execution_state_change(data)
     else:
-        msg, url = handle_unknown_event(event, context)
+        msg, url = handle_unknown_event(event, topic_arn, context)
 
     encoded_msg = json.dumps(msg).encode('utf-8')
     logger.info("Sending message:")
@@ -126,6 +136,13 @@ def get_alarm_webhook_url(topic_arn, state):
     if topic_arn in alarm_sns_topics_normal:
         return webhook_url_normal
     return alarm_state_map[state]['url']
+
+def get_generic_webhook_url(topic_arn):
+    if topic_arn in generic_sns_topics_alert:
+        return webhook_url_alert
+    if topic_arn in generic_sns_topics_normal:
+        return webhook_url_normal
+    return webhook_url_normal
 
 def handle_alarm(data, topic_arn):
     account_id = data['AWSAccountId']
@@ -154,7 +171,7 @@ def handle_alarm(data, topic_arn):
         "potentialAction": []
     }, get_alarm_webhook_url(topic_arn, new_state)
 
-def handle_unknown_event(event, context):
+def handle_unknown_event(event, topic_arn, context):
     sns_message = event['Records'][0]['Sns']['Message']
     sns_subject = event['Records'][0]['Sns']['Subject']
     summary = f"AWS SNS Teams Relay: {sns_subject}"
@@ -167,8 +184,7 @@ def handle_unknown_event(event, context):
         "text": f"{sns_message}\n\n<br />Relayed by {context.invoked_function_arn}",
         "title": summary,
         "potentialAction": []
-    }, webhook_url_normal
-
+    }, get_generic_webhook_url(topic_arn)
 
 def handle_codepipeline_approval(data, event):
     summary = event['Records'][0]['Sns'].get('Subject', "SUBJECT_IS_MISSING")

@@ -22,6 +22,15 @@ See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sn
 
 ## Change Log
 
+### v3.0.0
+- Breaking changes! Handle just a single SNS topic for each parameter, instead of a list. The template now creates SNS Subscriptions and Lambda Permissions for the SNS topics provided in the parameters. 
+- replace `AlarmSNSTopicsNormal` parameter with `AlarmSNSTopicNormal`
+- replace `AlarmSNSTopicsAlert` parameter with `AlarmSNSTopicAlert`
+- add `GenericSNSTopicNormal` parameter
+- add `GenericSNSTopicAlert` parameter
+- add `AWS::SNS::Subscription` resources for each of the SNS topics in the parameters
+- add `AWS::Lambda::Permission` resources for each of the SNS topics in the parameters
+
 ### v2.2.0
 - minor change to generic SNS message display format to allow markdown-formatted message payloads to display better in Teams
 
