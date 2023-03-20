@@ -1,5 +1,6 @@
 """
 Relay incoming SNS messages to Microsoft Teams webhooks
+See https://github.com/CU-CommunityApps/cu-aws-cloudformation/tree/main/sns-teams-relay
 """
 import os
 import urllib3

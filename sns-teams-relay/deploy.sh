@@ -10,16 +10,7 @@
 #   - jq: https://stedolan.github.io/jq/
 #   - cfn-lint: https://github.com/aws-cloudformation/cfn-python-lint
 
-###############################################################################
-# Customize these variables with your deployment specifics
-
-# Bucket to use for temporary location for Lambda/CloudFormation deploy package
-S3_BUCKET=CHANGE_ME
-# Your Teams webhook URL
-WEBHOOK_URL_NORMAL=https://cornellprod.webhook.office.com/CHANGE_ME
-WEBHOOK_URL_ALERT=https://cornellprod.webhook.office.com/CHANGE_ME
 ENV=${ENV:-dev}
-###############################################################################
 
 TARGET_TEMPLATE=template.yaml
 
@@ -40,11 +31,6 @@ echo "########## VALIDATE ##########"
 set -e # Stop the script if it doesn't validate.
 aws cloudformation validate-template --template-body file://$TARGET_TEMPLATE
 
-echo "########## PACKAGE ##########"
-aws cloudformation package --template $TARGET_TEMPLATE --s3-bucket $S3_BUCKET --output-template template-export.yml
-
-aws s3 cp template-export.yml s3://$S3_BUCKET/template-export.yml
-
 # Uncomment other CAPABILITY values as needed
 # CAPABILITIES=""
 # CAPABILITIES="--capabilities CAPABILITY_IAM"
@@ -52,16 +38,13 @@ CAPABILITIES="--capabilities CAPABILITY_NAMED_IAM"
 
 echo "########## DEPLOY ##########"
 aws cloudformation deploy \
-  --template-file template-export.yml \
+  --template-file $TARGET_TEMPLATE \
   --stack-name $STACK_NAME \
-  --s3-bucket $S3_BUCKET \
   $CAPABILITIES \
   --no-fail-on-empty-changeset \
   --parameter-overrides \
       VersionParam="$TEMPLATE_VERSION" \
-      EnvironmentParam="$ENV" \
-      TeamsWebhookNormalURLParam="$WEBHOOK_URL_NORMAL" \
-      TeamsWebhookAlertURLParam="$WEBHOOK_URL_ALERT"
+      EnvironmentParam="$ENV"
 
 aws cloudformation update-termination-protection \
   --enable-termination-protection \
@@ -69,5 +52,4 @@ aws cloudformation update-termination-protection \
 
 ARN=$(aws lambda get-function --function-name  sns-teams-relay-${ENV} --query Configuration.FunctionArn --output text)
 
-echo "Lambda Function ARN: ${ARN}"    
-    
+echo "Lambda Function ARN: ${ARN}"
