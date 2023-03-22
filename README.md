@@ -4,6 +4,7 @@ This repo is a collection of standard, official templates used by the Cornell CI
 
 - [baseline-nacl](baseline-nacl) creates a standard baseline network access control list for AWS VPCs
 - [client-vpn](client-vpn) example deployment of Client VPN
+- [codepipeline-simple](codepipeline-simple) - creates a simple CodePipeline and CodeBuild project
 - [iam-access-analyzer](iam-access-analyzer) creates an IAM Role that IAM Access Analyzer can use to examine CloudTrail logs and generate IAM Policies based on actual usage
 - [ses](ses) creates IAM policy and user group for sending email using SES
 - [shib-dba](shib-dba) creates an IAM Role that grants privileges for DBAs to function within AWS with RDS, EC2, etc.
