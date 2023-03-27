@@ -1,6 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Shib role for specifically tagged resource access.
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-tagged.yml
+  Version: "1.0.0"
+  RecommendedStackName: shib-$TagValue
+  ChangeLog:
+    "1.0.0":
+      - First versioned release
+      - Expand KMS privs to allow access to default AWS keys (alias: aws/*)
+      - Reduce KMS:Create* privs to KMS:CreateKey priv
+      - Expand general KMS privs to allow Get*, List*, Decribe*
+      - Add tags to role
 Parameters:
   TagKey:
     Description: Tag key to match between IAM role and resources (ie. eds:team)
@@ -87,6 +98,21 @@ Parameters:
   LambdaNamePrefix:
     Description: Lambda function name prefix to grant access to (if applicable)
     Type: String
+  VersionParam:
+    Description: CIT template version
+    Type: String
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-tagged.yml
+    Type: String
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/display/CLOUD/AWS+Tagging+and+IAM+Policies
+    Type: String
 
 Conditions:
   CreateS3: !Equals [ !Ref S3Access, 'yes' ]
@@ -130,6 +156,16 @@ Resources:
       Tags:
         - Key: !Ref TagKey
           Value: !Ref TagValue
+        - Key: Description
+          Value: !Sub "This role supports tag-based access to resources"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -141,7 +177,8 @@ Resources:
             Condition:
               StringEquals:
                 SAML:aud: https://signin.aws.amazon.com/saml
-                
+
+
   ResourceGroupPolicy:
     DependsOn: TagBasedResourceGroup
     Type: 'AWS::IAM::Policy'
@@ -375,9 +412,9 @@ Resources:
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "kms:List*",
-                            "kms:DescribeKey",
-                            "kms:DescribeCustomKeyStores"
+                            "kms:Describe*",
+                            "kms:Get*",
+                            "kms:List*"
                         ],
                         "Resource": "*"
                     },
@@ -395,11 +432,26 @@ Resources:
                     },
                     {
                         "Effect": "Deny",
-                        "Action": "kms:Create*",
+                        "Action": "kms:Createkey",
                         "Resource": "*",
                         "Condition": {
                             "ForAllValues:StringNotLike": {
                                 "${key2}": "${value2}"
+                            }
+                        }
+                    },
+                    {
+                        "Sid": "AllowUseOfAwsDefaultKeys",
+                        "Effect": "Allow",
+                        "Action": [
+                            "kms:*"
+                        ],
+                        "Resource": [
+                            "*"
+                        ],
+                        "Condition": {
+                            "ForAnyValue:StringLike": {
+                                "kms:ResourceAliases": "alias/aws/*"
                             }
                         }
                     }
