@@ -3,9 +3,16 @@ Description: >
   Shib role for specifically tagged resource access.
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-tagged.yml
-  Version: "1.0.0"
+  Version: "1.1.0"
   RecommendedStackName: shib-$TagValue
   ChangeLog:
+    "1.1.0":
+      - Rectify template with reality of shib-datawarehouse deployed in cu-odaa
+      - remove ecr:Create* without conditions
+      - add dms:ModifyEndpoint
+      - put conditional DMS actions in alpha order
+      - add support privs
+      - rename inline policies to ensure that a CloudFormation update will force policys to match the template
     "1.0.0":
       - First versioned release
       - Expand KMS privs to allow access to default AWS keys (alias: aws/*)
@@ -178,12 +185,11 @@ Resources:
               StringEquals:
                 SAML:aud: https://signin.aws.amazon.com/saml
 
-
   ResourceGroupPolicy:
     DependsOn: TagBasedResourceGroup
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'resource', 'groups', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline', 'resource', 'groups', !Ref TagValue ] ]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -207,7 +213,7 @@ Resources:
     Condition: CreateCloudShell
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'cloudshell', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-cloudshell', !Ref TagValue ] ]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -222,7 +228,7 @@ Resources:
     Condition: CreateS3
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 's3', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-s3', !Ref TagValue ] ]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -249,7 +255,7 @@ Resources:
     Condition: CreateECR
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'ecr', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-ecr', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -260,8 +266,7 @@ Resources:
                         "Effect": "Allow",
                         "Action": [
                             "ecr:List*",
-                            "ecr:Describe*",
-                            "ecr:Create*"
+                            "ecr:Describe*"
                         ],
                         "Resource": "*"
                     },
@@ -291,7 +296,7 @@ Resources:
     Condition: CreateEC2
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'ec2', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-ec2', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -338,7 +343,7 @@ Resources:
     Condition: CreateEC2Full
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'ec2-full', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-ec2-full', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -402,7 +407,7 @@ Resources:
     Condition: CreateKMS
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'kms', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-kms', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -469,7 +474,7 @@ Resources:
     Condition: CreateSecretsManager
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'secrets', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-secrets', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -519,7 +524,7 @@ Resources:
     Condition: CreateSageMakerFull
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'sagemaker-full', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-sagemaker-full', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -617,7 +622,7 @@ Resources:
     Condition: CreateDMS
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'dms', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-dms', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -657,26 +662,27 @@ Resources:
                     },
                     {
                         "Action": [
-                            "dms:TestConnection",
-                            "dms:ListTagsForResource",
-                            "dms:DescribeReplicationTaskIndividualAssessments",
-                            "dms:StartReplicationTask",
-                            "dms:StartReplicationTaskAssessmentRun",
-                            "dms:DescribeApplicableIndividualAssessments",
-                            "dms:DescribeReplicationTaskAssessmentRuns",
-                            "dms:StopReplicationTask",
-                            "dms:DescribeReplicationInstanceTaskLogs",
-                            "dms:DescribeTableStatistics",
-                            "dms:StartReplicationTaskAssessment",
-                            "dms:DescribeReplicationTaskAssessmentResults",
                             "dms:DeleteConnection",
                             "dms:DeleteEndpoint",
                             "dms:DeleteReplicationInstance",
                             "dms:DeleteReplicationTask",
+                            "dms:DescribeApplicableIndividualAssessments",
+                            "dms:DescribeReplicationInstanceTaskLogs",
+                            "dms:DescribeReplicationTaskAssessmentResults",
+                            "dms:DescribeReplicationTaskAssessmentRuns",
+                            "dms:DescribeReplicationTaskIndividualAssessments",
+                            "dms:DescribeTableStatistics",
+                            "dms:ListTagsForResource",
+                            "dms:ModifyEndpoint",
                             "dms:ModifyReplicationInstance",
                             "dms:ModifyReplicationTask",
                             "dms:ReloadTables",
-                            "dms:RemoveTagsFromResource"
+                            "dms:RemoveTagsFromResource",
+                            "dms:StartReplicationTask",
+                            "dms:StartReplicationTaskAssessment",
+                            "dms:StartReplicationTaskAssessmentRun",
+                            "dms:StopReplicationTask",
+                            "dms:TestConnection"
                         ],
                         "Resource": [
                             "arn:aws:dms:*:${account}:*"
@@ -747,7 +753,7 @@ Resources:
     Condition: CreateCloudformation
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'cloudformation', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-cloudformation', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -785,7 +791,7 @@ Resources:
     Condition: CreateLambda
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'lambda', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-lambda', !Ref TagValue ] ]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -822,7 +828,7 @@ Resources:
     Condition: CreateSQS
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'sqs', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-sqs', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -848,7 +854,7 @@ Resources:
     Condition: CreateECS
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'ecs', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-ecs', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -919,7 +925,7 @@ Resources:
     Condition: CreateGlue
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: !Join [ '-', [ 'glue', !Ref TagValue ] ]
+      PolicyName: !Join [ '-', [ 'inline-glue', !Ref TagValue ] ]
       PolicyDocument:
         !Sub 
           - |
@@ -953,5 +959,19 @@ Resources:
           -
             key: !Sub 'aws:ResourceTag/${TagKey}'
             value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  SupportPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'inline-support', !Ref TagValue ] ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Action: 'support:*'
+            Resource: '*'
       Roles:
         - !Ref IAMRole
