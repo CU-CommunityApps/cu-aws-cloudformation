@@ -982,7 +982,6 @@ Resources:
       Roles:
         - !Ref IAMRole
 
-
   RedShiftPolicy:
     Condition: CreateRedShift
     Type: 'AWS::IAM::Policy'
