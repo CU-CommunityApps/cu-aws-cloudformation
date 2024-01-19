@@ -3,9 +3,11 @@ Description: >
   Shib role for specifically tagged resource access.
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-tagged.yml
-  Version: "1.1.0"
+  Version: "1.2.0"
   RecommendedStackName: shib-$TagValue
   ChangeLog:
+    "1.2.0":
+      - Add support for RedShift
     "1.1.0":
       - Rectify template with reality of shib-datawarehouse deployed in cu-odaa
       - remove ecr:Create* without conditions
