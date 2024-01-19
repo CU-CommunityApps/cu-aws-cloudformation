@@ -73,6 +73,11 @@ Parameters:
     Default: 'no'
     Type: String
     AllowedValues: ['yes', 'no']
+  RedShiftAccess:
+    Description: Access to RedShift Services?
+    Default: 'no'
+    Type: String
+    AllowedValues: ['yes', 'no']
   CloudShellAccess:
     Description: Access to Cloud Shell?
     Default: 'no'
@@ -97,6 +102,7 @@ Conditions:
   CreateECS: !Equals [ !Ref ECSAccess, 'yes' ]
   CreateECR: !Equals [ !Ref ECRAccess, 'yes' ]
   CreateGlue: !Equals [ !Ref GlueAccess, 'yes' ]
+  CreateRedShift: !Equals [ !Ref RedShiftAccess, 'yes' ]
   CreateKMS: !Equals [ !Ref KMSAccess, 'yes' ]
   CreateCloudShell: !Equals [ !Ref CloudShellAccess, 'yes' ]
   CreateSageMakerFull: !Equals [ !Ref SageMakerFullAccess, 'yes' ]
@@ -887,6 +893,68 @@ Resources:
                             "glue:UpdateConnection", 
                             "glue:GetConnection",
                             "glue:DeleteConnection"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "StringEquals": {
+                                "${key}": "${value}"
+                            }
+                        }
+                    }
+                ]
+            }
+          -
+            key: !Sub 'aws:ResourceTag/${TagKey}'
+            value: !Join [ '', [ !Join [ '/', [ '${aws:PrincipalTag', !Ref TagKey ] ], '}' ] ]
+      Roles:
+        - !Ref IAMRole
+
+  RedShiftPolicy:
+    Condition: CreateRedShift
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Join [ '-', [ 'redshift', !Ref TagValue ] ]
+      PolicyDocument:
+        !Sub 
+          - |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "redshift:Describe*",
+                            "redshift:View*",
+                            "redshift:List*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "redshift:Create*"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Sid": "DenyWithoutTags",
+                        "Effect": "Deny",
+                        "Action": [
+                            "redshift:Create*"
+                        ],
+                        "Resource": "*",
+                        "Condition": {
+                            "ForAllValues:StringNotLike": {
+                                "${key2}": [
+                                    "${value2}"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "redshift:*"
                         ],
                         "Resource": "*",
                         "Condition": {
