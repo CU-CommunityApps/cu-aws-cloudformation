@@ -1,0 +1,422 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Resources for simple CodePipeline and CodeBuild Project
+
+Metadata:
+  Source:  https://github.com/CU-CommunityApps/cu-aws-cloudformation/codepipeline-simple/template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: codepipeline-simple-${ENV}
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+
+  VersionParam:
+    Description: CIT template version
+    Type: String
+    
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+    
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/codepipeline-simple/template.yaml
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: dev
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/some/wiki/page
+    Type: String
+
+  CodeBuildBucketParam:
+    Description: S3 bucket for CodePipeline scratch use
+    Type: String
+
+  CodeStarConnectionArnParam:
+    Description: ARN of a CodeStar source repository connection; see https://docs.aws.amazon.com/codepipeline/latest/userguide/connections-github.html
+    Type: String
+
+  SchedulerCronParam:
+    Description: Cron expresssion for when the pipeline should be run; see https://docs.aws.amazon.com/scheduler/latest/UserGuide/schedule-types.html
+    Default: cron(0 8 * * ? *)
+    Type: String
+
+  SchedulerTimeZoneParam:
+    Description: The timezone to use for the scheduler 
+    Default: America/New_York
+    Type: String
+
+  SchedulerFlexibleMinutes:
+    Description: Leeway, in minutes, to allow for scheduling flex
+    Default: 15
+    Type: String
+
+  ProjectBaseNameParam:
+    Description: Base name to use for resource names
+    Default: codepipeline-simple
+    Type: String
+
+  NotificationSNSArn:
+    Description: ARN of SNS topic to receive notifications about the pipeline
+    Type: String
+
+  GithubRepositoryParam:
+    Description: Github repository
+    Default: CU-CommunityApps/cu-aws-cloudformation
+    Type: String
+
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectBaseNameParam}-codebuild-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/service-role/"
+      Policies:
+        - PolicyName: "codebuild-privs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !GetAtt CodeBuildLogs.Arn
+                  - !Sub
+                    - "${LOG_GROUP_ARN}:*"
+                    - LOG_GROUP_ARN: !GetAtt CodeBuildLogs.Arn
+
+              - Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${CodeBuildBucketParam}/*"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "CodePipeline role for ${ProjectBaseNameParam}-pipeline"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectBaseNameParam}-codepipeline-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/service-role/"
+      Policies:
+        - PolicyName: "codepipeline-privs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+
+              - Effect: "Allow"
+                Action: "codestar-connections:UseConnection"
+                Resource: !Ref CodeStarConnectionArnParam
+
+              - Effect: "Allow"
+                Action:
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuildBatches"
+                  - "codebuild:StartBuildBatch"
+                Resource: !GetAtt CodeBuildProject.Arn
+
+              - Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${CodeBuildBucketParam}/*"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "CodePipeline role for ${ProjectBaseNameParam}-pipeline"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodeBuildLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      # DataProtectionPolicy: Json
+      # KmsKeyId: String
+      LogGroupName: !Sub "/aws/codebuild/${ProjectBaseNameParam}"
+      RetentionInDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "CodeBuild logs for ${ProjectBaseNameParam}"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        # ArtifactIdentifier: String
+        # EncryptionDisabled: Boolean
+        # Location: String
+        # Name: String
+        # NamespaceType: String
+        # OverrideArtifactName: Boolean
+        # Packaging: String
+        # Path: String
+        Type: CODEPIPELINE
+      LogsConfig:
+        CloudWatchLogs: 
+          GroupName: !Ref CodeBuildLogs
+          Status: ENABLED
+          # StreamName: String
+      Name: !Ref ProjectBaseNameParam
+      Description: !Sub "CodeBuild project for ${ProjectBaseNameParam}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "codepipeline-simple/buildspec.yml"
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "CodeBuild project for ${ProjectBaseNameParam}"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodeBuildBucketParam
+      Name: !Ref ProjectBaseNameParam
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnectionArnParam
+                FullRepositoryId: !Ref GithubRepositoryParam
+                BranchName: master
+                OutputArtifactFormat: CODE_ZIP
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "CodePipeline for ${ProjectBaseNameParam}"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodePipelineNotifications:
+    Type: AWS::CodeStarNotifications::NotificationRule
+    Properties: 
+      # CreatedBy: String
+      DetailType: FULL
+      # EventTypeId: String
+      EventTypeIds: 
+        - codepipeline-pipeline-pipeline-execution-failed
+        - codepipeline-pipeline-pipeline-execution-canceled
+        - codepipeline-pipeline-pipeline-execution-resumed
+        - codepipeline-pipeline-pipeline-execution-succeeded
+        - codepipeline-pipeline-pipeline-execution-superseded
+      Name: !Sub "${ProjectBaseNameParam}-pipeline-notifications"
+      Resource: !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}"
+      Status: ENABLED
+      # TargetAddress: String
+      Targets: 
+        - TargetAddress: !Ref NotificationSNSArn
+          TargetType: SNS
+      Tags:
+        Environment: !Ref EnvironmentParam
+        Description: !Sub "Notifications for ${ProjectBaseNameParam} CodePipeline"
+        Documentation: !Ref DocumentationURLParam
+        "cit:contact-email": !Ref ContactEmailParam
+        "cit:version": !Ref VersionParam
+        "cit:source": !Ref SourceURLParam
+
+  CodePipelineScheduleGroup:
+    Type: AWS::Scheduler::ScheduleGroup
+    Properties: 
+      Name: !Ref ProjectBaseNameParam
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "Scheduler for ${ProjectBaseNameParam}"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CodePipelineSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties: 
+      Description: !Sub "Trigger ${ProjectBaseNameParam} CodePipeline on a regular schedule"
+      # EndDate: String
+      FlexibleTimeWindow: 
+        MaximumWindowInMinutes: !Ref SchedulerFlexibleMinutes
+        Mode: FLEXIBLE
+      GroupName: !Ref CodePipelineScheduleGroup
+      # KmsKeyArn: String
+      Name: !Ref ProjectBaseNameParam
+      ScheduleExpression: !Ref SchedulerCronParam
+      ScheduleExpressionTimezone: !Ref SchedulerTimeZoneParam
+      # StartDate: String
+      State: ENABLED
+      Target: 
+        Arn: !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}"
+        # DeadLetterConfig: 
+        #   DeadLetterConfig
+        # EcsParameters: 
+        #   EcsParameters
+        # EventBridgeParameters: 
+        #   EventBridgeParameters
+        # Input: String
+        # KinesisParameters: 
+        #   KinesisParameters
+        # RetryPolicy: 
+        #   RetryPolicy
+        RoleArn: !GetAtt SchedulerRole.Arn
+        # SageMakerPipelineParameters: 
+        #   SageMakerPipelineParameters
+        # SqsParameters: 
+        #   SqsParameters
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectBaseNameParam}-scheduler-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "scheduler.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Sub "${AWS::AccountId}"
+                # Avoid circular dependency
+                "aws:SourceArn": !Sub "arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${CodePipelineScheduleGroup}/${ProjectBaseNameParam}"
+      Path: "/service-role/"
+      Policies:
+        - PolicyName: "codepipeline-privs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "codepipeline:StartPipelineExecution"
+                Resource:  !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: !Sub "Role for ${ProjectBaseNameParam} scheduler"
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam

@@ -9,6 +9,7 @@ The Lambda attempts to provide decent formatting for these specific types of AWS
 - `CodePipeline Pipeline Execution State Change`
 - `CodePipeline Action Execution State Change`
 - CodePipeline Manual Approval notifications
+- CloudWatch Alarm notifications (Alarm, OK, Insufficient Data)
 
 See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sns-teams-relay) for a Terraform module to deploy similar functionality with Terraform.
 
@@ -20,6 +21,31 @@ See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sn
 - [example-notifications](example-notifications/) -- Examples of SNS and message content
 
 ## Change Log
+
+### v4.0.0
+- Breaking changes! Switched to using Secrets Manager to retrieve Teams Webhook URLs.
+- Remove `TeamsWebhookNormalURLParam`
+- Remove `TeamsWebhookAlertURLParam`
+- Simplified template and deployment script by using pre-zipped Lambda source.
+
+### v3.0.0
+- Breaking changes! Handle just a single SNS topic for each parameter, instead of a list. The template now creates SNS Subscriptions and Lambda Permissions for the SNS topics provided in the parameters. 
+- replace `AlarmSNSTopicsNormal` parameter with `AlarmSNSTopicNormal`
+- replace `AlarmSNSTopicsAlert` parameter with `AlarmSNSTopicAlert`
+- add `GenericSNSTopicNormal` parameter
+- add `GenericSNSTopicAlert` parameter
+- add `AWS::SNS::Subscription` resources for each of the SNS topics in the parameters
+- add `AWS::Lambda::Permission` resources for each of the SNS topics in the parameters
+
+### v2.2.0
+- minor change to generic SNS message display format to allow markdown-formatted message payloads to display better in Teams
+
+### v2.1.1
+- add support for handling CloudWatch alarms messages
+- add `AlarmSNSTopicsNormal` parameter
+- add `AlarmSNSTopicsAlert` parameter
+- add `StrftimeFormatParam` parameter
+- jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
 
 ### v2.0.0
 - apply some Python style fixes
@@ -38,14 +64,16 @@ See [tf-module-sns-teams-relay](https://github.com/CU-CommunityApps/tf-module-sn
 
 ## Deploy
 
-1. Customize the following variables in [deploy.sh](deploy.sh):
-  - `WEBHOOK_URL_NORMAL`: The URL for your Teams webhook for success, warning, info messages
-  - `WEBHOOK_URL_ALERT`: The URL for your Teams webhook for failure of any type. If you only have a single webhook, set this to be the same as `WEBHOOK_URL_NORMAL` 
-  - `S3_BUCKET`: Any S3 bucket that you have write privileges to. Used as temporary storage during the `aws cloudformation package` and `aws cloudformation deploy` processes.
-2. Run `./deploy.sh`
-3. To test the deployment, run `./invoke.sh` to send a test message to the Lambda function. This should trigger a new message to the target Teams channel (via the webhook).
+1. Create new SNS topics (or find the ARNs of existing topics) that you want to use for these parameters:
+  - AlarmSNSTopicNormal
+  - AlarmSNSTopicAlert
+  - GenericSNSTopicNormal
+  - GenericSNSTopicAlert
+2. Replace the default vaules for these parameters in `template.yaml`. You can also leave these parameters empty.
+1. Create a secret in Secrets Manager to hold the Teams webhook URLs. This secret should contain a `alerts_channel` value and a `notifications_channel` value. 
+1. Customize the following references to the secret in `template.yaml`. Change `/teams.microsoft.com/CHANGE_ME/webhooks` to whatever you named your secret. Find and update the following values:
+  - `{{resolve:secretsmanager:/teams.microsoft.com/CHANGE_ME/webhooks:SecretString:alerts_channel}}`
+  - `{{resolve:secretsmanager:/teams.microsoft.com/CHANGE_ME/webhooks:SecretString:notifications_channel}}`
 
-## Configure Messaging
-1. Create a new (or choose an existing) SNS topic to which messages for Teams will be sent. See [Creating an Amazon SNS topic](https://docs.aws.amazon.com/sns/latest/dg/sns-create-topic.html).
-2. Create a subscription to that SNS topic with the Lambda Function ARN as the target. See [How do I subscribe a Lambda function to an Amazon SNS topic in the same account?](https://aws.amazon.com/premiumsupport/knowledge-center/lambda-subscribe-sns-topic-same-account/).
-3. (Optional) Send a test message to the SNS topic. See [Amazon SNS message publishing](https://docs.aws.amazon.com/sns/latest/dg/sns-publishing.html).
+1. Run `./deploy.sh`
+1. To test the deployment, run `./invoke.sh` to send a test message to the Lambda function. This should trigger a new message to the target Teams channel (via the webhook).

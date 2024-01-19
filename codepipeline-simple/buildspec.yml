@@ -1,0 +1,10 @@
+version: 0.2
+
+env:
+  variables:
+    MESSAGE: "Hello World"
+
+phases:
+  build:
+    commands:
+      - echo $MESSAGE

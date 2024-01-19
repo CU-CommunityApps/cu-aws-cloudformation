@@ -138,5 +138,5 @@ dmypy.json
 cython_debug/
 
 # Local customizations
-template-export.yml
-response.out.json
+*.custom.*
+**/*.zip

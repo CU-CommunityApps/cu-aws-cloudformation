@@ -4,9 +4,11 @@ Description: >
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/blob/main/shib-tagged/shib-analytics-limited.yml
-  Version: "1.0.0"
+  Version: "1.1.0"
   RecommendedStackName: shib-analytics
   ChangeLog:
+    "1.1.0":
+      - add resource tagging restriction for secrets access
     "1.0.0":
       - inital release
 
@@ -32,7 +34,10 @@ Parameters:
   BucketNamePrefix5:
     Description: (If applicable) Prefix for the S3 bucket name(s) to grant access to
     Type: String
+  SecretsReadAccessPrefix:
+    Description: Prefix of secrets to be accessible for read-only access. Leaving this blank will allow read access to ALL secrets!
     Type: String
+    Default: ChangeMe
 
 Conditions:
   NoBucket2: !Equals [ !Ref BucketNamePrefix2, '' ]
@@ -91,7 +96,13 @@ Resources:
                   - 'secretsmanager:Describe*'
                   - 'secretsmanager:Get*'
                 Resource: '*'
-        - 
+                Condition:
+                  StringEquals:
+                    !Sub 
+                      - '"${KEY}": "${VALUE}"'
+                      - KEY: !Sub 'aws:ResourceTag/${TagKey}'
+                        VALUE: 
+                    ""aws:ResourceTag/eds:team": "${aws:PrincipalTag/eds:team}"'
           PolicyName: !Join [ '-', [ 's3', 'deny', !Ref TagValue ] ]
           PolicyDocument:
             Version: '2012-10-17'

@@ -5,9 +5,28 @@ Description: Resources to relay SNS messages to a Microsoft Teams webhook.
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/sns-teams-relay/template.yaml
-  Version: "2.0.0"
+  Version: "4.0.0"
   RecommendedStackName: sns-teams-relay-$ENV
   ChangeLog:
+    "4.0.0":
+      - Breaking changes! Switched to using Secrets Manager to retrieve Teams Webhook URLs.
+      - Remove `TeamsWebhookNormalURLParam`
+      - Remove `TeamsWebhookAlertURLParam`
+      - Simplified template and deployment script by using pre-zipped Lambda source.
+    "3.0.0":
+      - Breaking changes! Handle just a single SNS topic for each parameter, instead of a list.
+      - replace `AlarmSNSTopicsNormal` parameter with `AlarmSNSTopicNormal`
+      - replace `AlarmSNSTopicsAlert` parameter with `AlarmSNSTopicAlert`
+      - add `GenericSNSTopicNormal` parameter
+      - add `GenericSNSTopicAlert` parameter
+      - add `AWS::SNS::Subscription` resources for each of the SNS topics in the parameters
+      - add `AWS::Lambda::Permission` resources for each of the SNS topics in the parameters
+    "2.1.1":
+      - add support for handling CloudWatch alarms messages
+      - add `AlarmSNSTopicsNormal` parameter
+      - add `AlarmSNSTopicsAlert` parameter
+      - add `StrftimeFormatParam` parameter
+      - jumping to v2.1.1. instead of v2.1.0 to match corresponding version in https://github.com/CU-CommunityApps/tf-module-sns-teams-relay
     "2.0.0":
       - Add support for two different webhook URLs: WEBHOOK_URL_NORMAL, WEBHOOK_URL_ALERT
     "1.0.0":
@@ -43,32 +62,64 @@ Parameters:
     Default: https://confluence.cornell.edu/documentation/of/this/deployment
     Type: String
 
-  TeamsWebhookNormalURLParam:
-    Description: URL for your Teams webhook for success, warning, info messages
+  StrftimeFormatParam:
+    Description: Python strftime format string to use to convert to readable timestamps.
+    Type: String
+    Default: "%Y-%m-%d %H:%M UTC"
+
+  AlarmSNSTopicNormal:
+    Description: All alarm notifications coming from this SNS topic will be sent to the normal webhook.
+    Default: ""
     Type: String
 
-  TeamsWebhookAlertURLParam:
-    Description: URL for your Teams webhook for failure of any type
+  AlarmSNSTopicAlert:
+    Description: All alarm notifications coming from this SNS topic will be sent to the alert webhook.
+    Default: ""
+    Type: String
+
+  GenericSNSTopicNormal:
+    Description: All unclassified notifications coming from this SNS topic will be sent to the normal webhook.
+    Default: ""
+    Type: String
+
+  GenericSNSTopicAlert:
+    Description: All unclassified notifications coming from this SNS topic will be sent to the alert webhook.
+    Default: ""
     Type: String
 
 Mappings: {}
 
-Conditions: {} 
+Conditions:
+
+  AlarmSNSTopicNormalCondition: !Not [ !Equals [ !Ref AlarmSNSTopicNormal, "" ]]
+
+  AlarmSNSTopicAlertCondition: !Not [ !Equals [ !Ref AlarmSNSTopicAlert, "" ]]
+
+  GenericSNSTopicNormalCondition: !Not [ !Equals [ !Ref GenericSNSTopicNormal, "" ]]
+
+  GenericSNSTopicAlertCondition: !Not [ !Equals [ !Ref GenericSNSTopicAlert, "" ]]
 
 Resources:
 
   SNStoTeamsRelay:
     Type: AWS::Lambda::Function
-    Properties: 
-      Code: lambda/
+    Properties:
+      Code:
+        S3Bucket: public.cloud.cit.cornell.edu
+        S3Key: lambda/src/sns-teams-relay/sns-teams-relay.zip
       # CodeSigningConfigArn: String
       # DeadLetterConfig: 
       #   DeadLetterConfig
       Description: Relay incoming SNS messages to a Microsoft Teams webhook
       Environment: 
         Variables:
-          WEBHOOK_URL_NORMAL: !Ref TeamsWebhookNormalURLParam
-          WEBHOOK_URL_ALERT: !Ref TeamsWebhookAlertURLParam
+          WEBHOOK_URL_NORMAL: "{{resolve:secretsmanager:/teams.microsoft.com/CHANGE_ME/webhooks:SecretString:alerts_channel}}"
+          WEBHOOK_URL_ALERT: "{{resolve:secretsmanager:/teams.microsoft.com/CHANGE_ME/webhooks:SecretString:notifications_channel}}"
+          ALARM_SNS_TOPICS_NORMAL: !Ref AlarmSNSTopicNormal
+          ALARM_SNS_TOPICS_ALERT: !Ref AlarmSNSTopicAlert
+          STRFTIME_FORMAT: !Ref StrftimeFormatParam
+          GENERIC_SNS_TOPICS_NORMAL: !Ref GenericSNSTopicNormal
+          GENERIC_SNS_TOPICS_ALERT: !Ref GenericSNSTopicAlert
       # FileSystemConfigs: 
       #   - FileSystemConfig
       FunctionName: !Sub "sns-teams-relay-${EnvironmentParam}"
@@ -132,3 +183,75 @@ Resources:
           Value: !Ref VersionParam
         - Key: cit:source
           Value:  !Ref SourceURLParam
+
+  AlarmSNSTopicNormalSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: AlarmSNSTopicNormalCondition
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref AlarmSNSTopicNormal
+      Endpoint: !GetAtt SNStoTeamsRelay.Arn
+
+  AlarmSNSTopicAlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: AlarmSNSTopicAlertCondition
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref AlarmSNSTopicAlert
+      Endpoint: !GetAtt SNStoTeamsRelay.Arn
+
+  GenericSNSTopicNormalSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: GenericSNSTopicNormalCondition
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref GenericSNSTopicNormal
+      Endpoint: !GetAtt SNStoTeamsRelay.Arn
+
+  GenericSNSTopicAlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: GenericSNSTopicAlertCondition
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref GenericSNSTopicAlert
+      Endpoint: !GetAtt SNStoTeamsRelay.Arn
+
+  AlarmSNSTopicNormalNormalPermission:
+    Type: AWS::Lambda::Permission
+    Condition: AlarmSNSTopicNormalCondition
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SNStoTeamsRelay
+      Principal: sns.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref AlarmSNSTopicNormal
+
+  AlarmSNSTopicAlertPermission:
+    Type: AWS::Lambda::Permission
+    Condition: AlarmSNSTopicAlertCondition
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SNStoTeamsRelay
+      Principal: sns.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref AlarmSNSTopicAlert
+
+  GenericSNSTopicNormalPermission:
+    Type: AWS::Lambda::Permission
+    Condition: GenericSNSTopicNormalCondition
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SNStoTeamsRelay
+      Principal: sns.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref GenericSNSTopicNormal
+
+  GenericSNSTopicAlertPermission:
+    Type: AWS::Lambda::Permission
+    Condition: GenericSNSTopicAlertCondition
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SNStoTeamsRelay
+      Principal: sns.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref GenericSNSTopicAlert

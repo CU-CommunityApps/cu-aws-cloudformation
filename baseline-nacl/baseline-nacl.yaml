@@ -1,19 +1,43 @@
+###############################################################################
+# Take Heed!
+# 
+# The NACL created by this template can support a VPC with CIDR block(s) in the
+# 100.64.0.0/10 range. If this is your situation, you will need to request
+# a NACL rule quota increase since the number of outbound rules is greater than
+# the default 20 rule quota before using this template. See
+# https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html#vpc-limits-nacls
+###############################################################################
 ---
 AWSTemplateFormatVersion: '2010-09-09'
+
 Description: "Create a standard baseline Network ACL. Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/tree/master/baseline-nacl"
-###############################################################################
-# Change Log
-# v2.0:
-#   - Add rules to allow egress to LDAP servers outside of
-#     Cornell campus IP space.
-#   - Reduce rule count for Kerberos by allowing all types of 
-#     traffic to/from Kerberos servers.
-###############################################################################
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/template-template/template.yaml
+  Version: "2.2.0"
+  RecommendedStackName: cornell-baseline-nacl
+  ChangeLog:
+    "2.2.0":
+      - improve 'Metadata.RecommendedStackName'
+      - add option for including 100.64.0.0/10 rules in the NACL
+      - add 'DeletionPolicy' to prefix list resources
+    "2.1.0":
+      - add prefix list resources
+      - add standard 'Metadata' section to this template
+      - add parameters containing metadata
+      - add tags to resources where possible
+      - Unfortunately, we can't reference the prefix lists in the Network ACL.
+      - add optional outbound rules for SMTP on 25, 587
+    "2.0.0":
+      - Add rules to allow egress to LDAP servers outside of Cornell campus IP space.
+      - Reduce rule count for Kerberos by allowing all types of traffic to/from Kerberos servers.
+    "1.0.0":
+      - inital release
 
 Parameters:
+
   TargetVPCParam:
     Type: AWS::EC2::VPC::Id
-    # Default:
     Description: In which VPC should this Network ACL be created?
 
   NACLNameParam:
@@ -21,18 +45,154 @@ Parameters:
     Default: cornell-baseline-nacl
     Description: What name do you want to use for the NACL?
 
+  VersionParam:
+    Description: CIT template version
+    Type: String
+
+  ContactEmailParam:
+    Description: CIT contact email tag value
+    Default: cloud-support@cornell.edu
+    Type: String
+
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/tree/master/baseline-nacl
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: prod
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/x/rFL_Ew
+    Type: String
+
+  Include100Param:
+    Description: Do the target VPCs have any CIDR blocks in 100.64.0.0/10?
+    Default: false
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+Conditions:
+  Include100: !Equals 
+    - !Ref Include100Param
+    - true
+
 Resources:
+
+  KerberosPrefixList:
+    Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
+    Properties:
+      AddressFamily: IPv4
+      Entries:
+        - Cidr: 52.200.35.38/32
+          Description: kerberos-aws.login.cornell.edu
+        - Cidr: 52.201.66.104/32
+          Description: kerberos-aws2.login.cornell.edu
+      MaxEntries: 4
+      PrefixListName: cornell-kerberos
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: CIDRs of Cornell's official Kerberos servers in AWS
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  DirectoryPrefixList:
+    Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
+    Properties:
+      AddressFamily: IPv4
+      Entries:
+        - Cidr: 3.228.209.25/32
+          Description: query.directory.cornell.edu
+        - Cidr: 3.218.140.210/32
+          Description: query.directory.cornell.edu
+        - Cidr: 35.170.14.255/32
+          Description: test.directory.cornell.edu
+        - Cidr: 3.229.3.150/32
+          Description: test.directory.cornell.edu
+      MaxEntries: 8
+      PrefixListName: cornell-directory
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: CIDRs of Cornell's official test and prod directory servers in AWS
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
+
+  CampusPublicPrivateIpsPrefixList:
+    Type: AWS::EC2::PrefixList
+    DeletionPolicy: Retain
+    Properties:
+      AddressFamily: IPv4
+      Entries:
+        - Cidr: 10.0.0.0/8
+        - Cidr: 128.84.0.0/16
+        - Cidr: 128.253.0.0/16
+        - Cidr: 132.236.0.0/16
+        - Cidr: 192.35.82.0/24
+        - Cidr: 192.122.235.0/24
+        - Cidr: 192.122.236.0/24
+      MaxEntries: 8
+      PrefixListName: cornell-campus-public-and-private-cidrs
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: CIDRs of Cornell's private and public networks
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
 
   VPCNetworkACL:
     Type: AWS::EC2::NetworkAcl
     DeletionPolicy: Retain
     Properties:
+      VpcId: !Ref TargetVPCParam
       Tags:
         - Key: Name
           Value: !Ref NACLNameParam
-        - Key: Version
-          Value: "2.0"
-      VpcId: !Ref TargetVPCParam
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: This is the description of this specific resource.
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value:  !Ref SourceURLParam
 
   NetworkACLRuleIn0100:
     Type: AWS::EC2::NetworkAclEntry
@@ -205,6 +365,21 @@ Resources:
       Protocol: -1
       RuleAction : allow
       RuleNumber : 1300
+
+  # This any subnet in the VPC to accept traffic
+  # from any subnets in the 100.64.0.0/10 that happen to be in the VPC.
+  # Since the 100.64.0.0/10 CIDR block isn't routable, any traffic from
+  # a 100.64.0.0/10 CIDR block is local to the VPC.
+  NetworkACLRuleIn1400:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Retain
+    Condition: Include100
+    Properties:
+      CidrBlock: 100.64.0.0/10
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1400
 
   NetworkACLRuleOut0100:
     Type: AWS::EC2::NetworkAclEntry
@@ -452,3 +627,19 @@ Resources:
       Protocol: -1
       RuleAction : allow
       RuleNumber : 1700
+
+  # This allows traffic in any subnet in the VPC
+  # to reach any subnets in the 100.64.0.0/10 that happen to be in the VPC.
+  # Since the 100.64.0.0/10 CIDR block isn't routable, any traffic to
+  # a 100.64.0.0/10 CIDR block is local to the VPC.
+  NetworkACLRuleOut1800:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Retain
+    Condition: Include100
+    Properties:
+      Egress: true
+      CidrBlock: 100.64.0.0/10
+      NetworkAclId: !Ref VPCNetworkACL
+      Protocol: -1
+      RuleAction : allow
+      RuleNumber : 1800
