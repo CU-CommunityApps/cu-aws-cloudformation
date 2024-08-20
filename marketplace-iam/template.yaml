@@ -1,0 +1,138 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  IAM Resources to limit access to the AWS Marketplace. Do not alter. Contact cloud-support@cornell.edu with questions.
+
+Metadata:
+  Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/marketplace-iam/template.yaml
+  Version: "1.0.0"
+  RecommendedStackName: marketplace-iam
+  ChangeLog:
+    "1.0.0":
+      - inital release
+
+Parameters:
+
+  VersionParam:
+    Description: CIT template version
+    Type: String
+    
+  ContactEmailParam:
+    Description: CIT contact email tag value version
+    Default: cloud-support@cornell.edu
+    Type: String
+    
+  SourceURLParam:
+    Description: URL of this template in source code repository (not necessarily public)
+    Default: https://github.com/CU-CommunityApps/cu-aws-cloudformation/marketplace-iam/template.yaml
+    Type: String
+
+  EnvironmentParam:
+    Description: Environment for the resources this template creates.
+    Default: prod
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  
+  DocumentationURLParam:
+    Description: URL of documentation about this deployment or these resources
+    Default: https://confluence.cornell.edu/x/HrSCHw
+    Type: String
+
+  RoleNameParam:
+    Description: Base name for the role
+    Default: limited_admin
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9_]*$"
+    ConstraintDescription: "Parameter must contain only alphabetic letters, numbers, and underscores."
+
+Mappings: {}
+
+Conditions: {} 
+
+Resources:
+
+  DenyMarketplaceChangesPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    DeletionPolicy: Delete
+    Properties:
+      Description: Prevent changes to AWS Marketplace settings and subscriptions
+      ManagedPolicyName: deny-marketplace-changes-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyMarketplaceChanges
+            Effect: Deny
+            Action:
+                - aws-marketplace-management:*
+                - aws-marketplace:Accept*
+                - aws-marketplace:BatchMeterUsage
+                - aws-marketplace:Cancel*
+                - aws-marketplace:CompleteTask
+                - aws-marketplace:Create*
+                - aws-marketplace:DeleteResourcePolicy
+                - aws-marketplace:DisassociateProductsFromPrivateMarketplace
+                - aws-marketplace:MeterUsage
+                - aws-marketplace:Put*
+                - aws-marketplace:RegisterUsage
+                - aws-marketplace:RejectAgreementApprovalRequest
+                - aws-marketplace:ResolveCustomer
+                - aws-marketplace:StartBuild
+                - aws-marketplace:StartChangeSet
+                - aws-marketplace:Subscribe
+                - aws-marketplace:Unsubscribe
+                - aws-marketplace:UpdateAgreementApprovalRequest
+                - aws-marketplace:UpdateTask
+            Resource: "*"
+          - Sid: DenyIAMChanges
+            Effect: Deny
+            Action:
+                - iam:*
+            Resource: 
+              - Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/deny-marketplace-changes-policy"
+              - Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/shib-${RoleNameParam}"
+
+  IAMRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      RoleName:
+        Fn::Sub: "shib-${RoleNameParam}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: 
+                Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:saml-provider/cornell_idp"
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+                SAML:aud: https://signin.aws.amazon.com/saml
+      Description: Admin role that excludes marketplace changes
+      ManagedPolicyArns:
+        - !Ref DenyMarketplaceChangesPolicy
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      # MaxSessionDuration: Integer
+      # Path: String
+      # PermissionsBoundary: String
+      # Policies: 
+        # - Policy
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentParam
+        - Key: Description
+          Value: Admin role that excludes marketplace changes
+        - Key: Documentation
+          Value: !Ref DocumentationURLParam
+        - Key: cit:contact-email
+          Value: !Ref ContactEmailParam
+        - Key: cit:version
+          Value: !Ref VersionParam
+        - Key: cit:source
+          Value: !Ref SourceURLParam
+
+
