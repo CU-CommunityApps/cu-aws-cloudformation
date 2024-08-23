@@ -6,9 +6,13 @@ Description: |
 
 Metadata:
   Source: https://github.com/CU-CommunityApps/cu-aws-cloudformation/marketplace-iam/template.yaml
-  Version: "1.0.0"
-  RecommendedStackName: marketplace-iam
+  Version: "1.1.0"
+  RecommendedStackName: iam-admin-no-marketplace
   ChangeLog:
+    "1.1.0":
+      - Change default role name to shib-admin_no_market
+      - Added default for VersionParam
+      - Improved RecommendedStackName
     "1.0.0":
       - inital release
 
@@ -17,6 +21,7 @@ Parameters:
   VersionParam:
     Description: CIT template version
     Type: String
+    Default: "1.1.0"
     
   ContactEmailParam:
     Description: CIT contact email tag value version
@@ -44,7 +49,7 @@ Parameters:
 
   RoleNameParam:
     Description: Base name for the role
-    Default: limited_admin
+    Default: admin_no_market
     Type: String
     AllowedPattern: "^[a-zA-Z0-9_]*$"
     ConstraintDescription: "Parameter must contain only alphabetic letters, numbers, and underscores."
